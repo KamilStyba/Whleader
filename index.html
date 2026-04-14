@@ -1,0 +1,3426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#c41e1e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="40K Codex">
+<title>WH40K Codex</title>
+<link rel="manifest" href="manifest.json">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Cinzel:wght@600;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:     #0d0d12;
+  --s1:     #13131a;
+  --s2:     #1a1a24;
+  --s3:     #21212e;
+  --b1:     rgba(255,255,255,0.06);
+  --b2:     rgba(255,255,255,0.10);
+  --b3:     rgba(255,255,255,0.16);
+  --red:    #c41e1e;
+  --red2:   #e03030;
+  --gold:   #c9a84c;
+  --gold2:  #e8c870;
+  --t1:     #f0ece4;
+  --t2:     #a09888;
+  --t3:     #5a5248;
+  --r:      14px;
+  --r2:     10px;
+  --safe-b: env(safe-area-inset-bottom, 0px);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;overflow:hidden;}
+body{background:var(--bg);color:var(--t1);font-family:'Outfit',sans-serif;font-size:15px;}
+
+/* ── LAYOUT ── */
+#app{display:flex;flex-direction:column;height:100dvh;}
+.screen{display:none;flex:1;overflow:hidden;flex-direction:column;}
+.screen.active{display:flex;}
+
+/* ── HEADER ── */
+.app-header{
+  padding:12px 16px 0;
+  padding-top:calc(12px + env(safe-area-inset-top,0px));
+  background:var(--s1);
+  border-bottom:1px solid var(--b1);
+  flex-shrink:0;
+}
+.header-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.app-title{font-family:'Cinzel',serif;font-size:1.1rem;font-weight:900;color:var(--gold);letter-spacing:0.04em;}
+.app-title span{color:var(--red2);}
+.header-actions{display:flex;align-items:center;gap:8px;}
+.icon-btn{
+  width:36px;height:36px;border-radius:10px;
+  background:var(--s3);border:1px solid var(--b2);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;color:var(--t2);font-size:1rem;
+  transition:all 0.15s;
+}
+.icon-btn:active{background:var(--s2);color:var(--t1);}
+.status-pill{
+  display:flex;align-items:center;gap:5px;
+  background:var(--s3);border:1px solid var(--b1);
+  border-radius:20px;padding:4px 10px;
+  font-size:0.7rem;color:var(--t3);font-weight:500;letter-spacing:0.04em;
+}
+.dot{width:6px;height:6px;border-radius:50%;background:#3d8b3d;box-shadow:0 0 5px #3d8b3d;transition:all 0.3s;}
+.dot.off{background:#444;box-shadow:none;}
+.dot.sync{background:var(--gold);box-shadow:0 0 6px var(--gold);animation:blink 0.8s infinite;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0.3;}}
+
+/* ── SEARCH BAR ── */
+.search-bar{
+  display:flex;align-items:center;gap:8px;
+  background:var(--s2);border:1px solid var(--b1);
+  border-radius:12px;padding:0 12px;
+  margin-bottom:12px;
+}
+.search-bar svg{flex-shrink:0;color:var(--t3);}
+.search-bar input{
+  flex:1;background:none;border:none;outline:none;
+  color:var(--t1);font-family:'Outfit',sans-serif;font-size:0.95rem;
+  padding:10px 0;
+}
+.search-bar input::placeholder{color:var(--t3);}
+
+/* ── FACTION PILLS ── */
+.faction-scroll{
+  display:flex;gap:6px;overflow-x:auto;padding-bottom:10px;
+  scrollbar-width:none;
+}
+.faction-scroll::-webkit-scrollbar{display:none;}
+.faction-pill{
+  flex-shrink:0;padding:5px 12px;border-radius:20px;
+  border:1px solid var(--b2);background:var(--s2);
+  font-size:0.75rem;font-weight:500;color:var(--t2);
+  cursor:pointer;transition:all 0.15s;white-space:nowrap;
+}
+.faction-pill.active{color:#fff;border-color:transparent;}
+.faction-pill.all.active{background:var(--red);border-color:var(--red);}
+
+/* ── SCROLLABLE CONTENT ── */
+.scroll-body{
+  flex:1;overflow-y:auto;padding:12px 14px;
+  overscroll-behavior:contain;
+}
+.scroll-body::-webkit-scrollbar{width:3px;}
+.scroll-body::-webkit-scrollbar-thumb{background:var(--b2);border-radius:2px;}
+
+/* ── UNIT CARD ── */
+.unit-card{
+  background:var(--s1);border:1px solid var(--b1);
+  border-radius:var(--r);margin-bottom:8px;
+  cursor:pointer;overflow:hidden;transition:border-color 0.15s;
+}
+.unit-card:active{border-color:var(--b3);}
+.unit-header{
+  display:flex;align-items:center;gap:10px;padding:12px 14px;
+}
+.faction-dot{width:3px;border-radius:2px;align-self:stretch;flex-shrink:0;min-height:36px;}
+.unit-main{flex:1;min-width:0;}
+.unit-name{font-size:0.95rem;font-weight:600;color:var(--t1);margin-bottom:3px;}
+.unit-meta{display:flex;gap:5px;flex-wrap:wrap;}
+.tag{
+  font-size:0.62rem;font-weight:500;letter-spacing:0.03em;
+  padding:2px 7px;border-radius:6px;
+  background:var(--s3);color:var(--t3);border:1px solid var(--b1);
+}
+.tag.role{background:rgba(201,168,76,0.1);border-color:rgba(201,168,76,0.2);color:var(--gold);}
+.unit-pts{
+  font-family:'Cinzel',serif;font-size:0.85rem;font-weight:600;
+  color:var(--t1);flex-shrink:0;text-align:right;
+}
+.unit-pts small{display:block;font-family:'Outfit',sans-serif;font-size:0.62rem;color:var(--t3);font-weight:400;}
+
+/* ── RESULT COUNT ── */
+.result-label{font-size:0.72rem;color:var(--t3);font-weight:500;margin-bottom:10px;letter-spacing:0.03em;}
+
+/* ── BOTTOM SHEET ── */
+#sheet-backdrop{
+  position:fixed;inset:0;background:rgba(0,0,0,0.7);
+  backdrop-filter:blur(4px);z-index:100;
+  opacity:0;pointer-events:none;transition:opacity 0.25s;
+}
+#sheet-backdrop.open{opacity:1;pointer-events:all;}
+#unit-sheet{
+  position:fixed;bottom:0;left:0;right:0;
+  background:var(--s1);border-radius:20px 20px 0 0;
+  border-top:1px solid var(--b2);z-index:101;
+  transform:translateY(100%);transition:transform 0.3s cubic-bezier(0.32,0.72,0,1);
+  max-height:90dvh;display:flex;flex-direction:column;
+  padding-bottom:calc(var(--safe-b) + 16px);
+}
+#unit-sheet.open{transform:translateY(0);}
+.sheet-drag{width:36px;height:4px;background:var(--b3);border-radius:2px;margin:10px auto 0;}
+.sheet-header{
+  padding:14px 18px 10px;border-bottom:1px solid var(--b1);flex-shrink:0;
+}
+.sheet-name{font-size:1.1rem;font-weight:700;color:var(--t1);margin-bottom:4px;}
+.sheet-faction{font-size:0.75rem;color:var(--t3);font-weight:500;}
+.sheet-body{overflow-y:auto;padding:16px 18px;flex:1;}
+.sheet-body::-webkit-scrollbar{display:none;}
+
+/* ── SHEET SECTIONS ── */
+.sh-section{margin-bottom:20px;}
+.sh-title{
+  font-size:0.65rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;
+  color:var(--t3);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--b1);
+}
+/* stats grid */
+.stats-row{
+  display:grid;grid-template-columns:repeat(7,1fr);gap:4px;
+}
+.stat-cell{
+  background:var(--s2);border:1px solid var(--b1);border-radius:8px;
+  text-align:center;padding:6px 2px;
+}
+.stat-label{font-size:0.55rem;color:var(--t3);font-weight:600;letter-spacing:0.06em;display:block;}
+.stat-val{font-size:0.9rem;font-weight:700;color:var(--t1);}
+.stat-model-name{font-size:0.72rem;color:var(--t2);margin-bottom:5px;font-weight:500;}
+
+/* weapon card */
+.weapon-card{
+  background:var(--s2);border:1px solid var(--b1);border-radius:10px;
+  margin-bottom:6px;overflow:hidden;
+}
+.weapon-top{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:8px 12px;border-bottom:1px solid var(--b1);
+}
+.weapon-name{font-size:0.85rem;font-weight:600;color:var(--t1);}
+.weapon-range{font-size:0.75rem;color:var(--t3);}
+.weapon-stats{display:grid;grid-template-columns:repeat(5,1fr);gap:0;}
+.w-stat{text-align:center;padding:6px 2px;}
+.w-label{font-size:0.52rem;color:var(--t3);font-weight:600;letter-spacing:0.05em;display:block;}
+.w-val{font-size:0.85rem;font-weight:700;color:var(--t1);}
+.weapon-kws{padding:5px 12px;font-size:0.72rem;color:var(--gold);font-style:italic;}
+
+/* ability */
+.ability-item{margin-bottom:10px;}
+.ability-name{
+  font-size:0.8rem;font-weight:700;color:var(--red2);margin-bottom:3px;
+}
+.ability-desc{font-size:0.82rem;color:var(--t2);line-height:1.5;}
+.pts-badge{
+  display:inline-block;background:rgba(196,30,30,0.15);border:1px solid rgba(196,30,30,0.3);
+  color:var(--red2);border-radius:8px;padding:4px 12px;
+  font-family:'Cinzel',serif;font-size:0.9rem;font-weight:700;
+  margin-bottom:12px;
+}
+
+/* ── DETACHMENTS TAB ── */
+.det-faction-header{
+  display:flex;align-items:center;gap:10px;
+  margin-bottom:8px;margin-top:4px;
+}
+.det-faction-line{flex:1;height:1px;background:var(--b1);}
+.det-faction-label{
+  font-size:0.65rem;font-weight:700;letter-spacing:0.08em;
+  text-transform:uppercase;color:var(--t3);flex-shrink:0;
+}
+.det-card{
+  background:var(--s1);border:1px solid var(--b1);
+  border-radius:var(--r);margin-bottom:8px;overflow:hidden;cursor:pointer;
+  transition:border-color 0.15s;
+}
+.det-card:active{border-color:var(--b3);}
+.det-header{display:flex;align-items:center;gap:10px;padding:12px 14px;}
+.det-color-bar{width:3px;border-radius:2px;align-self:stretch;min-height:32px;flex-shrink:0;}
+.det-info{flex:1;}
+.det-name{font-size:0.9rem;font-weight:600;color:var(--t1);}
+.det-rule-name{font-size:0.72rem;color:var(--t3);margin-top:2px;}
+.det-chevron{color:var(--t3);font-size:0.7rem;transition:transform 0.2s;}
+.det-card.open .det-chevron{transform:rotate(180deg);}
+.det-body{display:none;padding:0 14px 14px;border-top:1px solid var(--b1);}
+.det-card.open .det-body{display:block;}
+.det-rule-desc{font-size:0.8rem;color:var(--t2);line-height:1.5;padding:10px 0;margin-bottom:8px;border-bottom:1px solid var(--b1);}
+.strat-item{
+  background:var(--s2);border:1px solid var(--b1);border-radius:10px;
+  padding:9px 11px;margin-bottom:6px;
+}
+.strat-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:4px;}
+.strat-name{font-size:0.8rem;font-weight:600;color:var(--t1);}
+.strat-cost{
+  flex-shrink:0;background:rgba(201,168,76,0.15);border:1px solid rgba(201,168,76,0.25);
+  color:var(--gold);border-radius:6px;padding:2px 7px;font-size:0.68rem;font-weight:700;
+}
+.strat-desc{font-size:0.77rem;color:var(--t2);line-height:1.45;}
+.enh-item{
+  background:rgba(201,168,76,0.06);border:1px solid rgba(201,168,76,0.15);
+  border-radius:10px;padding:8px 11px;margin-bottom:6px;
+}
+.enh-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:3px;}
+.enh-name{font-size:0.8rem;font-weight:600;color:var(--gold);}
+.enh-pts{font-size:0.68rem;color:var(--t3);}
+.enh-desc{font-size:0.77rem;color:var(--t2);line-height:1.45;}
+.sub-title{
+  font-size:0.6rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;
+  color:var(--t3);margin:10px 0 6px;
+}
+
+/* ── BOTTOM NAV ── */
+#bottom-nav{
+  display:flex;background:var(--s1);border-top:1px solid var(--b1);
+  padding-bottom:calc(var(--safe-b) + 4px);flex-shrink:0;
+}
+.nav-btn{
+  flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;
+  padding:8px 4px;cursor:pointer;border:none;background:none;
+  color:var(--t3);font-family:'Outfit',sans-serif;font-size:0.62rem;font-weight:500;
+  letter-spacing:0.03em;transition:color 0.15s;
+}
+.nav-btn.active{color:var(--red2);}
+.nav-icon{font-size:1.2rem;line-height:1;}
+
+/* ── EMPTY / LOADING ── */
+.empty{text-align:center;padding:48px 20px;color:var(--t3);}
+.empty-icon{font-size:2.5rem;margin-bottom:10px;}
+.empty-title{font-size:1rem;font-weight:600;color:var(--t2);margin-bottom:6px;}
+.empty-desc{font-size:0.8rem;line-height:1.5;}
+
+/* ── INSTALL BANNER ── */
+#install-banner{
+  display:none;flex-shrink:0;
+  align-items:center;justify-content:space-between;
+  background:linear-gradient(90deg,rgba(196,30,30,0.15),rgba(201,168,76,0.1));
+  border-top:1px solid rgba(196,30,30,0.3);padding:9px 14px;gap:10px;
+}
+#install-banner.show{display:flex;}
+.inst-text{font-size:0.78rem;color:var(--t2);}
+.inst-btn{
+  background:var(--red);color:#fff;border:none;border-radius:8px;
+  font-family:'Outfit',sans-serif;font-size:0.75rem;font-weight:600;
+  padding:6px 14px;cursor:pointer;flex-shrink:0;
+}
+.inst-close{background:none;border:none;color:var(--t3);cursor:pointer;font-size:1rem;padding:2px;}
+
+/* ── FAVOURITES ── */
+.fav-btn{
+  width:32px;height:32px;background:none;border:none;
+  cursor:pointer;color:var(--t3);font-size:1.1rem;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  transition:color 0.15s;
+}
+.fav-btn.active{color:#e8b84b;}
+
+/* ── LEGEND BADGE ── */
+.legend-badge{
+  display:inline-flex;align-items:center;gap:3px;
+  background:rgba(201,168,76,0.12);border:1px solid rgba(201,168,76,0.35);
+  color:var(--gold);border-radius:5px;padding:1px 6px;
+  font-size:0.58rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;
+  flex-shrink:0;
+}
+.legend-badge-card{
+  display:inline-flex;align-items:center;gap:3px;
+  background:rgba(201,168,76,0.1);border:1px solid rgba(201,168,76,0.25);
+  color:var(--gold);border-radius:4px;padding:1px 5px;
+  font-size:0.55rem;font-weight:700;letter-spacing:0.07em;margin-left:4px;
+  vertical-align:middle;
+}
+
+/* ── CORE ABILITY CHIPS ── */
+.core-abilities{
+  display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px;
+}
+.core-chip{
+  display:inline-flex;align-items:center;gap:4px;
+  background:var(--s2);border:1px solid var(--b2);
+  border-radius:6px;padding:4px 9px;
+  font-size:0.73rem;font-weight:500;color:var(--t1);
+}
+.core-chip-icon{font-size:0.8rem;}
+.core-chip-val{color:var(--gold);font-weight:700;margin-left:2px;}
+
+/* ── SYNC NOTICE ── */
+.sync-notice{
+  font-size:0.7rem;color:var(--t3);text-align:center;
+  padding:6px;border-bottom:1px solid var(--b1);flex-shrink:0;
+}
+
+.stat-sub{
+  font-size:0.6rem;
+  color:var(--gold);
+  margin-top:2px;
+}
+
+/* ── WAHAPEDIA SHEET ENHANCEMENTS ── */
+
+/* Weapon table using proper table */
+.wh-weapon-section{margin-bottom:14px;}
+.wh-weapon-section-header{
+  display:flex;align-items:center;gap:6px;padding:5px 0 4px;
+  border-bottom:2px solid var(--red);margin-bottom:4px;
+}
+.wh-weapon-type-label{
+  font-size:0.6rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;
+  color:var(--red2);
+}
+.wh-weapon-type-icon{font-size:0.75rem;}
+.wh-wtable{width:100%;border-collapse:collapse;font-size:0.74rem;}
+.wh-wtable th{
+  font-size:0.52rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;
+  color:var(--t3);padding:4px 3px;text-align:center;background:var(--s3);
+}
+.wh-wtable th:first-child{text-align:left;padding-left:8px;min-width:90px;}
+.wh-wtable td{padding:5px 3px;text-align:center;color:var(--t1);border-bottom:1px solid var(--b1);}
+.wh-wtable td:first-child{text-align:left;padding-left:8px;font-weight:500;color:var(--t1);font-size:0.76rem;}
+.wh-wtable tr:last-child td{border-bottom:none;}
+.wh-wkw{padding:2px 8px 6px;display:flex;flex-wrap:wrap;gap:3px;}
+.wh-wkw-tag{
+  display:inline-block;background:rgba(201,168,76,0.1);border:1px solid rgba(201,168,76,0.2);
+  color:var(--gold);border-radius:4px;padding:1px 6px;font-size:0.58rem;
+  font-weight:500;letter-spacing:0.02em;
+}
+
+/* Wargear Options */
+.wh-wargear-list{padding:0;margin:0;list-style:none;}
+.wh-wargear-list li{
+  font-size:0.78rem;color:var(--t2);line-height:1.5;
+  padding:5px 0 5px 14px;position:relative;border-bottom:1px solid var(--b1);
+}
+.wh-wargear-list li:last-child{border-bottom:none;}
+.wh-wargear-list li::before{
+  content:'▸';position:absolute;left:0;color:var(--red2);font-size:0.6rem;top:7px;
+}
+
+/* Core stratagem cards */
+.core-strat-list{display:flex;flex-direction:column;gap:6px;}
+.core-strat-card{
+  background:var(--s2);border:1px solid var(--b1);border-radius:10px;
+  overflow:hidden;cursor:pointer;transition:border-color 0.15s;
+}
+.core-strat-card.relevant{border-left:3px solid var(--gold);}
+.core-strat-card:active{border-color:var(--b3);}
+.core-strat-header{
+  display:flex;align-items:center;gap:8px;padding:8px 11px;
+}
+.core-strat-name{font-size:0.82rem;font-weight:600;color:var(--t1);flex:1;}
+.core-strat-badges{display:flex;gap:4px;flex-shrink:0;align-items:center;}
+.core-strat-cp{
+  background:rgba(201,168,76,0.15);border:1px solid rgba(201,168,76,0.3);
+  color:var(--gold);border-radius:5px;padding:1px 6px;
+  font-size:0.65rem;font-weight:700;
+}
+.core-strat-phase{
+  background:rgba(196,30,30,0.12);border:1px solid rgba(196,30,30,0.25);
+  color:var(--red2);border-radius:5px;padding:1px 6px;
+  font-size:0.62rem;font-weight:600;
+}
+.core-strat-relevant-tag{
+  background:rgba(201,168,76,0.2);color:var(--gold2);
+  border-radius:4px;padding:1px 5px;font-size:0.58rem;font-weight:700;letter-spacing:0.04em;
+}
+.core-strat-body{
+  display:none;padding:0 11px 10px;border-top:1px solid var(--b1);
+}
+.core-strat-card.open .core-strat-body{display:block;}
+.core-strat-desc{font-size:0.78rem;color:var(--t2);line-height:1.5;padding-top:8px;}
+.core-strat-type{
+  font-size:0.62rem;color:var(--t3);font-weight:600;letter-spacing:0.05em;
+  text-transform:uppercase;margin-bottom:4px;padding-top:6px;
+}
+.strat-relevant-note{
+  font-size:0.7rem;color:var(--gold);margin-top:5px;font-weight:500;
+}
+
+/* Legend filter button */
+.legend-filter-btn{
+  display:inline-flex;align-items:center;gap:5px;
+  border-radius:8px;padding:5px 10px;
+  border:1px solid var(--b2);background:var(--s3);
+  cursor:pointer;font-family:'Outfit',sans-serif;
+  font-size:0.7rem;font-weight:600;color:var(--t3);
+  letter-spacing:0.04em;transition:all 0.15s;
+  flex-shrink:0;
+}
+.legend-filter-btn.active{
+  background:rgba(201,168,76,0.15);
+  border-color:rgba(201,168,76,0.4);
+  color:var(--gold);
+}
+.filter-row{
+  display:flex;align-items:center;gap:8px;
+  padding-bottom:10px;
+}
+
+/* Unit composition */
+.wh-comp-wrap{background:var(--s2);border:1px solid var(--b1);border-radius:10px;overflow:hidden;}
+.wh-comp-row{
+  display:flex;justify-content:space-between;align-items:center;
+  font-size:0.8rem;color:var(--t2);padding:7px 12px;border-bottom:1px solid var(--b1);
+}
+.wh-comp-row:last-child{border-bottom:none;}
+.wh-comp-models{flex:1;}
+.wh-comp-pts{
+  font-family:'Cinzel',serif;font-size:0.8rem;font-weight:700;color:var(--t1);
+  background:rgba(196,30,30,0.15);border:1px solid rgba(196,30,30,0.25);
+  border-radius:5px;padding:1px 8px;flex-shrink:0;
+}
+.wh-comp-note{font-size:0.72rem;color:var(--t3);padding:6px 12px;font-style:italic;border-top:1px solid var(--b1);}
+
+/* Leader / Attached info */
+.leader-list{display:flex;flex-direction:column;gap:4px;}
+.leader-item{
+  background:var(--s2);border:1px solid var(--b1);border-radius:8px;
+  padding:7px 11px;font-size:0.8rem;color:var(--t1);
+  display:flex;align-items:center;gap:7px;
+}
+.leader-icon{font-size:0.9rem;flex-shrink:0;}
+
+/* Transport */
+.transport-box{
+  background:rgba(58,111,186,0.08);border:1px solid rgba(58,111,186,0.25);
+  border-radius:10px;padding:10px 12px;
+}
+.transport-icon{font-size:1rem;margin-right:5px;}
+.transport-capacity{font-size:0.82rem;color:var(--t2);line-height:1.5;}
+.transport-capacity strong{color:var(--t1);}
+
+/* Damaged table */
+.damaged-box{
+  background:rgba(196,30,30,0.07);border:1px solid rgba(196,30,30,0.25);
+  border-radius:10px;overflow:hidden;
+}
+.damaged-row{
+  display:flex;align-items:flex-start;gap:10px;
+  padding:8px 12px;border-bottom:1px solid var(--b1);
+}
+.damaged-row:last-child{border-bottom:none;}
+.damaged-wounds{
+  font-family:'Cinzel',serif;font-size:0.78rem;font-weight:700;
+  color:var(--red2);flex-shrink:0;min-width:70px;
+}
+.damaged-desc{font-size:0.8rem;color:var(--t2);line-height:1.45;}
+
+/* Keywords */
+.wh-kw-wrap{display:flex;flex-wrap:wrap;gap:5px;}
+.wh-kw-pill{
+  font-size:0.63rem;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;
+  padding:3px 9px;border-radius:5px;
+  background:var(--s3);color:var(--t2);border:1px solid var(--b2);
+}
+.wh-kw-pill.faction{
+  background:rgba(196,30,30,0.12);color:var(--red2);border-color:rgba(196,30,30,0.28);font-weight:700;
+}
+
+/* Detachment groups */
+.wh-det-group{
+  border:1px solid var(--b1);border-radius:10px;overflow:hidden;margin-bottom:7px;
+}
+.wh-det-group-hdr{
+  display:flex;align-items:stretch;cursor:pointer;
+  background:var(--s2);border-bottom:1px solid var(--b1);
+  user-select:none;
+}
+.wh-det-group-bar{width:4px;flex-shrink:0;}
+.wh-det-group-info{flex:1;padding:9px 10px;}
+.wh-det-group-name{font-size:0.82rem;font-weight:600;color:var(--t1);margin-bottom:2px;}
+.wh-det-group-rule{font-size:0.66rem;color:var(--t3);letter-spacing:0.02em;}
+.wh-det-group-chevron{display:flex;align-items:center;padding:0 12px;color:var(--t3);font-size:0.65rem;transition:transform 0.2s;}
+.wh-det-group.open .wh-det-group-chevron{transform:rotate(180deg);}
+.wh-det-body{display:none;padding:8px 10px 10px;}
+.wh-det-group.open .wh-det-body{display:block;}
+.wh-det-rule-box{
+  font-size:0.75rem;color:var(--t2);line-height:1.5;
+  padding:7px 9px;background:var(--s3);border-radius:7px;margin-bottom:8px;
+}
+.wh-det-sub{
+  font-size:0.58rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;
+  color:var(--t3);margin:8px 0 5px;
+}
+.wh-strat{
+  background:rgba(0,100,80,0.14);border:1px solid rgba(0,160,120,0.22);
+  border-radius:8px;padding:7px 10px;margin-bottom:5px;
+}
+.wh-strat-top{display:flex;justify-content:space-between;align-items:flex-start;gap:6px;margin-bottom:2px;}
+.wh-strat-name{font-size:0.78rem;font-weight:600;color:#4ecda4;}
+.wh-strat-cost{
+  flex-shrink:0;font-size:0.64rem;font-weight:700;color:#4ecda4;
+  background:rgba(78,205,164,0.12);border:1px solid rgba(78,205,164,0.25);
+  border-radius:5px;padding:1px 7px;
+}
+.wh-strat-sub{font-size:0.6rem;color:var(--t3);letter-spacing:0.04em;text-transform:uppercase;margin-bottom:3px;}
+.wh-strat-desc{font-size:0.73rem;color:var(--t2);line-height:1.4;}
+.wh-enh{
+  background:rgba(201,168,76,0.07);border:1px solid rgba(201,168,76,0.18);
+  border-radius:8px;padding:7px 10px;margin-bottom:5px;
+}
+.wh-enh-top{display:flex;justify-content:space-between;align-items:flex-start;gap:6px;margin-bottom:3px;}
+.wh-enh-name{font-size:0.78rem;font-weight:600;color:var(--gold);}
+.wh-enh-pts{font-size:0.65rem;color:var(--t3);}
+.wh-enh-desc{font-size:0.73rem;color:var(--t2);line-height:1.4;}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ══ UNITS SCREEN ══ -->
+  <div class="screen active" id="screen-units">
+    <div class="app-header">
+      <div class="header-row">
+        <div class="app-title">WH<span>40K</span> Codex</div>
+        <div class="header-actions">
+          <div class="status-pill">
+            <div class="dot" id="dot"></div>
+            <span id="status-lbl">ONLINE</span>
+          </div>
+          <div class="icon-btn" onclick="triggerSync()" title="Sync">⟳</div>
+        </div>
+      </div>
+      <div class="search-bar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        <input type="search" id="unit-search" placeholder="Search units, keywords, abilities…" oninput="filterUnits(this.value)">
+      </div>
+      <div class="faction-scroll" id="faction-pills"></div>
+      <div class="filter-row">
+        <button class="legend-filter-btn" id="legend-btn" onclick="toggleLegend()">
+          📖 Legends: <span id="legend-btn-label">Hidden</span>
+        </button>
+        <span style="font-size:0.68rem;color:var(--t3);" id="legend-count-hint"></span>
+      </div>
+    </div>
+    <div class="sync-notice" id="sync-notice"></div>
+    <div class="scroll-body">
+      <div class="result-label" id="unit-count"></div>
+      <div id="units-list"></div>
+    </div>
+  </div>
+
+  <!-- ══ DETACHMENTS SCREEN ══ -->
+  <div class="screen" id="screen-det">
+    <div class="app-header">
+      <div class="header-row">
+        <div class="app-title">Detachments</div>
+        <div class="header-actions">
+          <div class="status-pill"><div class="dot" id="dot2"></div><span id="status-lbl2">ONLINE</span></div>
+        </div>
+      </div>
+      <div class="search-bar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        <input type="search" id="det-search" placeholder="Search detachments, stratagems…" oninput="filterDets(this.value)">
+      </div>
+      <div class="faction-scroll" id="det-faction-pills"></div>
+    </div>
+    <div class="scroll-body" id="det-list"></div>
+  </div>
+
+  <!-- ══ FAVOURITES SCREEN ══ -->
+  <div class="screen" id="screen-favs">
+    <div class="app-header">
+      <div class="header-row"><div class="app-title">Favourites</div></div>
+    </div>
+    <div class="scroll-body" id="favs-list"></div>
+  </div>
+
+  <!-- ══ BOTTOM NAV ══ -->
+  <div id="bottom-nav">
+    <button class="nav-btn active" onclick="showScreen('units')" id="nav-units">
+      <span class="nav-icon">⚔</span>Units
+    </button>
+    <button class="nav-btn" onclick="showScreen('det')" id="nav-det">
+      <span class="nav-icon">📋</span>Detachments
+    </button>
+    <button class="nav-btn" onclick="showScreen('favs')" id="nav-favs">
+      <span class="nav-icon">★</span>Favourites
+    </button>
+  </div>
+
+  <!-- ══ INSTALL BANNER ══ -->
+  <div id="install-banner">
+    <span class="inst-text">📱 Install as app for offline use</span>
+    <button class="inst-btn" id="inst-btn">Install</button>
+    <button class="inst-close" onclick="document.getElementById('install-banner').classList.remove('show')">✕</button>
+  </div>
+</div>
+
+<!-- ══ UNIT DETAIL SHEET ══ -->
+<div id="sheet-backdrop" onclick="closeSheet()"></div>
+<div id="unit-sheet">
+  <div class="sheet-drag"></div>
+  <div class="sheet-header" id="sheet-header"></div>
+  <div class="sheet-body" id="sheet-body"></div>
+</div>
+
+<script>
+  let showLegend = false;
+  function toggleLegend(){
+    showLegend = !showLegend;
+    const btn = document.getElementById('legend-btn');
+    const lbl = document.getElementById('legend-btn-label');
+    if(btn) btn.className = 'legend-filter-btn' + (showLegend ? ' active' : '');
+    if(lbl) lbl.textContent = showLegend ? 'Shown' : 'Hidden';
+    renderUnits();
+  }
+// ═══════════════════════════════════════════════════════════════
+// DATA — Warhammer 40,000 10th Edition
+// ═══════════════════════════════════════════════════════════════
+const FACTIONS = [
+  {id:'sm',    name:'Space Marines',       color:'#3a6fba'},
+  {id:'ba',    name:'Blood Angels',        color:'#a02020'},
+  {id:'da',    name:'Dark Angels',         color:'#1a4a2a'},
+  {id:'sw',    name:'Space Wolves',        color:'#4a6a8a'},
+  {id:'dw',    name:'Deathwatch',          color:'#2a2a4a'},
+  {id:'gk',    name:'Grey Knights',        color:'#6a8aaa'},
+  {id:'csm',   name:'Chaos Space Marines', color:'#8b2020'},
+  {id:'dg',    name:'Death Guard',         color:'#4a6a2a'},
+  {id:'ts',    name:'Thousand Sons',       color:'#1a4a8a'},
+  {id:'we',    name:'World Eaters',        color:'#aa2020'},
+  {id:'ec',    name:"Emperor's Children",  color:'#8a1a8a'},
+  {id:'cd',    name:'Chaos Daemons',       color:'#6a1a1a'},
+  {id:'am',    name:'Astra Militarum',     color:'#6a5a2a'},
+  {id:'ad',    name:'Adeptus Mechanicus',  color:'#8a2a1a'},
+  {id:'sos',   name:'Adepta Sororitas',    color:'#8a1a3a'},
+  {id:'cu',    name:'Adeptus Custodes',    color:'#b8922a'},
+  {id:'aeld',  name:'Aeldari',             color:'#2a5a6a'},
+  {id:'dru',   name:'Drukhari',            color:'#3a1a5a'},
+  {id:'hq',    name:'Harlequins',          color:'#5a2a6a'},
+  {id:'nec',   name:'Necrons',             color:'#1a5a1a'},
+  {id:'ork',   name:'Orks',               color:'#2a5a1a'},
+  {id:'tau',   name:"T'au Empire",         color:'#1a4a5a'},
+  {id:'tyr',   name:'Tyranids',            color:'#4a1a5a'},
+  {id:'gsc',   name:'Genestealer Cults',   color:'#3a1a4a'},
+  {id:'lov',   name:'Leagues of Votann',   color:'#5a4a2a'},
+  {id:'ik',    name:'Imperial Knights',    color:'#5a3a1a'},
+  {id:'ck',    name:'Chaos Knights',       color:'#3a1a1a'},
+];
+
+const DETACHMENTS = [
+  // ── SPACE MARINES ──
+  {faction:'sm', name:'Gladius Task Force', rule:'Oath of Moment',
+   ruleDesc:'At the start of your Command phase, select one unit from your opponent\'s army. Until the start of your next Command phase, each time a model in a friendly Adeptus Astartes unit makes an attack that targets that enemy unit, re-roll a Hit roll of 1.',
+   stratagems:[
+     {name:'Adaptive Strategy',cost:'1CP',desc:'Use in your Command phase. Select one Adeptus Astartes unit from your army. Until the end of the turn, that unit is eligible to shoot and declare a charge in a turn in which it Fell Back.'},
+     {name:'Orbital Bombardment',cost:'2CP',desc:'Once per battle, use at the start of your Shooting phase. Select one enemy unit visible to your Warlord. That unit suffers D3+3 mortal wounds.'},
+     {name:'Transhuman Physiology',cost:'1CP',desc:'Use in your opponent\'s Shooting phase or Fight phase when an Adeptus Astartes Infantry unit is targeted. Until the end of the phase, each time an attack is made against that unit, on an unmodified Wound roll of 1-3, the attack fails.'},
+     {name:'Fury of the First',cost:'1CP',desc:'Use in your Shooting or Fight phase. Select one Adeptus Astartes Terminator unit. Until the end of the phase, improve the AP of ranged and melee weapons by 1.'},
+     {name:'Honour the Chapter',cost:'1CP',desc:'Use in the Fight phase when an Adeptus Astartes unit is selected to fight. Until the end of the phase, each time a model in that unit makes a melee attack, add 1 to the Hit roll.'},
+     {name:'Only in Death Does Duty End',cost:'2CP',desc:'Use when an Adeptus Astartes Character model is destroyed. Before removing that model, it can either shoot or fight as if it were your Shooting or Fight phase.'},
+   ],
+   enhancements:[
+     {name:'Artificer Armour',pts:'+10pts',desc:'The bearer has a Save characteristic of 2+ and has the Feel No Pain 6+ ability.'},
+     {name:'The Honour Vehement',pts:'+15pts',desc:'Add 1 to the bearer\'s Attacks characteristic. Each time the bearer makes a melee attack, improve the AP by 1.'},
+     {name:'The Shield Eternal',pts:'+20pts',desc:'The bearer has a 4+ Invulnerable save. In addition, each time an attack is allocated to the bearer, reduce the Damage by 1.'},
+     {name:'Warlord Trait: Rites of War',pts:'+0pts',desc:'Friendly Adeptus Astartes Core units within 6" of the bearer have the Objective Secured ability.'},
+   ]},
+  {faction:'sm', name:'Anvil Siege Force', rule:'Devastation Doctrine',
+   ruleDesc:'Each time a model in an Adeptus Astartes Devastator unit makes an attack, if that unit did not move this turn, add 1 to the Hit roll.',
+   stratagems:[
+     {name:'Armour of Contempt',cost:'1CP',desc:'Use when an Adeptus Astartes Vehicle unit is targeted. Until the end of the phase, each time an attack targets that unit, subtract 1 from the Damage.'},
+     {name:'Siege Tactics',cost:'1CP',desc:'Use at the start of the Shooting phase. Select one Adeptus Astartes unit that has not moved. Until the end of the phase, weapons with the Heavy trait in that unit count as stationary.'},
+     {name:'Suppression Fire',cost:'1CP',desc:'Use after an Adeptus Astartes unit shoots. Select one enemy unit hit by those attacks. Until the start of your next turn, subtract 2 from that enemy unit\'s Move characteristic.'},
+     {name:'Fire on my Position',cost:'2CP',desc:'Use in any phase when an Adeptus Astartes unit is destroyed. That unit\'s position becomes a D6 mortal wounds blast centred on any remaining model.'},
+   ],
+   enhancements:[
+     {name:'Fire Discipline',pts:'+5pts',desc:'Heavy weapons in the bearer\'s unit have the Sustained Hits 1 ability.'},
+     {name:'Siege Veteran',pts:'+10pts',desc:'The bearer\'s unit ignores cover on their ranged attacks.'},
+   ]},
+  {faction:'sm', name:'Stormlance Task Force', rule:'Swift Strike',
+   ruleDesc:'Each time a model in an Adeptus Astartes unit makes a melee attack, if that model\'s unit made a Charge move this turn, add 1 to the Wound roll.',
+   stratagems:[
+     {name:'Rapid Advance',cost:'1CP',desc:'Use in your Movement phase. Select one Adeptus Astartes Mounted or Vehicle unit. That unit can Advance and still shoot this turn.'},
+     {name:'Turbo-boost',cost:'1CP',desc:'Use at the start of your Movement phase. Select one Adeptus Astartes Mounted unit. Add 3" to that unit\'s Move this turn.'},
+     {name:'Devastating Charge',cost:'1CP',desc:'Use in the Fight phase. Select one Adeptus Astartes unit that made a Charge move. Until the end of the phase, add 1 to the Damage of melee weapons.'},
+   ],
+   enhancements:[
+     {name:'Lance of Faith',pts:'+10pts',desc:'Add 3" to the bearer\'s Move. The bearer can Advance and Charge.'},
+     {name:'Imperium\'s Sword',pts:'+15pts',desc:'Each time the bearer makes a melee attack, if the bearer made a Charge move, add 1 to the Strength.'},
+   ]},
+  {faction:'sm', name:'Ironstorm Spearhead', rule:'Armoured Superiority',
+   ruleDesc:'Each time an Adeptus Astartes Vehicle unit makes a ranged attack, if that unit is not in Engagement Range of any enemy units, add 1 to the Hit roll.',
+   stratagems:[
+     {name:'Machine Spirit',cost:'1CP',desc:'Use in the Shooting phase. Select one Adeptus Astartes Vehicle that is below Half-strength. That unit can still shoot all its weapons without penalty.'},
+     {name:'Full Throttle',cost:'1CP',desc:'Use in the Movement phase. An Adeptus Astartes Vehicle can move as though it had not Advanced when shooting this turn.'},
+     {name:'Armoured Might',cost:'2CP',desc:'Use when an Adeptus Astartes Vehicle is destroyed. Before removing it, it can shoot all of its weapons at full effect.'},
+   ],
+   enhancements:[
+     {name:'Ironclad Chassis',pts:'+10pts',desc:'The bearer has the Feel No Pain 5+ ability.'},
+   ]},
+  {faction:'sm', name:'1st Company Task Force', rule:'Veteran Warriors',
+   ruleDesc:'Each time an Adeptus Astartes Terminator or Veteran unit makes an attack, re-roll a Wound roll of 1.',
+   stratagems:[
+     {name:'Tactical Precision',cost:'1CP',desc:'Use in the Shooting or Fight phase. Select one Adeptus Astartes unit. Until the end of the phase, attacks with Precision made by models in that unit always wound the Character target.'},
+     {name:'Company Veterans',cost:'1CP',desc:'Use in the Fight phase. Select one Adeptus Astartes Veteran unit. Models in that unit gain +1 Attack this phase.'},
+     {name:'Wisdom of the Ancients',cost:'1CP',desc:'Use at the start of your Command phase. Select one Adeptus Astartes Dreadnought. Until the end of the turn, treat that unit as having the Leader ability.'},
+   ],
+   enhancements:[
+     {name:'Battle-scarred Veteran',pts:'+10pts',desc:'The bearer\'s Attacks characteristic is increased by 1. Add 1 to the bearer\'s Leadership characteristic.'},
+   ]},
+
+  // ── CHAOS SPACE MARINES ──
+  {faction:'csm', name:'Slaves to Darkness', rule:'Mark of Chaos',
+   ruleDesc:'Each unit in your army (excluding Cultists) can be given a Mark of Chaos: Khorne (+1 Attack melee), Tzeentch (5+ Invuln), Nurgle (+1 Toughness), Slaanesh (+1" Move and Advance). Units benefit from their Mark\'s bonus.',
+   stratagems:[
+     {name:'Veterans of the Long War',cost:'1CP',desc:'Use in Shooting or Fight phase. Select one Heretic Astartes unit. Until the end of the phase, each time a model in that unit makes an attack against an Adeptus Astartes unit, add 1 to the Wound roll.'},
+     {name:'Daemonic Ritual',cost:'1CP',desc:'Use in your Command phase. Remove one friendly Cultists unit. Set up a Chaos Daemon unit of equal or lower points value within 6" of where the Cultists were.'},
+     {name:'Boon of Chaos',cost:'2CP',desc:'Use when a Heretic Astartes Character destroys an enemy Character. That model gains +1 to a characteristic of your choice.'},
+     {name:'Warp Surge',cost:'1CP',desc:'Use in the Fight phase. Select one Heretic Astartes unit. Until the end of the phase, add 1 to Strength and Attacks.'},
+     {name:'Tide of Traitors',cost:'1CP',desc:'Use at the end of your Movement phase. Remove a Cultists unit, then set it up within 6" of any battlefield edge, more than 9" from enemies.'},
+     {name:'Creeping Death',cost:'1CP',desc:'Use when a Heretic Astartes unit shoots. Until the end of the phase, add 1 to the AP of all ranged attacks.'},
+   ],
+   enhancements:[
+     {name:'Liber Hereticus',pts:'+5pts',desc:'The bearer can attempt to Deny one Psychic power per phase as if they were a Psyker.'},
+     {name:'Cursed Artefact',pts:'+15pts',desc:'Enemy units within 6" of the bearer cannot use Command Points.'},
+     {name:'Eye of Night',pts:'+20pts',desc:'Once per battle, the bearer can use this. All enemy units within 18" suffer D3 mortal wounds.'},
+     {name:'Blade of the Relict',pts:'+10pts',desc:'Melee weapon: S+2, AP-3, D2. Each time this hits, the target cannot use Feel No Pain saves.'},
+   ]},
+  {faction:'csm', name:'Deceptors', rule:'Masters of Deception',
+   ruleDesc:'At the start of your opponent\'s Charge phase, you can redeploy up to D3 Heretic Astartes units anywhere within 6" of their current position.',
+   stratagems:[
+     {name:'False Advance',cost:'1CP',desc:'Use in your Movement phase. A Heretic Astartes unit can Advance without being unable to shoot this turn.'},
+     {name:'Hidden Agendas',cost:'2CP',desc:'Use at the start of your opponent\'s Shooting phase. Select one Heretic Astartes Infantry unit. That unit is not a valid target for ranged attacks this phase.'},
+     {name:'Feinted Retreat',cost:'1CP',desc:'Use when a Heretic Astartes unit Falls Back. That unit can still shoot this turn.'},
+   ],
+   enhancements:[
+     {name:'Master of Lies',pts:'+10pts',desc:'Once per turn, when this model\'s unit is targeted for an attack, you can change the bearer\'s unit to a different eligible unit within 6".'},
+   ]},
+  {faction:'csm', name:'Deathmongers', rule:'Butchers of Worlds',
+   ruleDesc:'Each time a Heretic Astartes unit destroys an enemy unit, gain one Carnage point. At the start of your Command phase, if you have 3+ points, all Heretic Astartes units gain +1 Attacks until end of turn.',
+   stratagems:[
+     {name:'Skull Taker',cost:'1CP',desc:'Use in the Fight phase. Select a Heretic Astartes unit. Each time a model in that unit destroys an enemy model, it regains 1 lost wound.'},
+     {name:'Unbridled Slaughter',cost:'2CP',desc:'Use at the start of the Fight phase. A Heretic Astartes unit gains +2 Attacks and +1 Strength this phase. At the end of the phase, it cannot be selected to fight again.'},
+     {name:'Blood for the Blood God',cost:'1CP',desc:'Use in the Fight phase. A Heretic Astartes unit can fight again this phase.'},
+   ],
+   enhancements:[
+     {name:'Slaughterer\'s Strength',pts:'+10pts',desc:'Add 2 to the bearer\'s Strength characteristic.'},
+   ]},
+
+  // ── DEATH GUARD ──
+  {faction:'dg', name:'Plague Company', rule:'Inexorable Advance',
+   ruleDesc:'Ranged weapons equipped by Death Guard Infantry cannot be used against units that are within Engagement Range. However, Death Guard units are not affected by the penalty for moving and shooting Heavy weapons, and each time an attack is made against a Death Guard unit, subtract 1 from the Damage.',
+   stratagems:[
+     {name:'Putrid Detonation',cost:'2CP',desc:'Use when a Death Guard Vehicle is destroyed. Before removing it, all units within D6" suffer D3 mortal wounds.'},
+     {name:'Diseased Horde',cost:'1CP',desc:'Use at the start of the Fight phase. Until the end of the phase, each time a Death Guard unit is destroyed, remove only half the models (round down).'},
+     {name:'Miasma of Pestilence',cost:'1CP',desc:'Use in your opponent\'s Shooting phase. Select one Death Guard Infantry unit. Until the end of the phase, ranged attacks against that unit subtract 1 from the Hit roll.'},
+     {name:'Grandfather\'s Blessing',cost:'1CP',desc:'Use at the start of your Command phase. A Death Guard Character regains D3 lost wounds.'},
+     {name:'Foul Stench',cost:'1CP',desc:'Use in the Fight phase. Until the end of the phase, melee attacks against a Death Guard unit subtract 1 from the Hit roll.'},
+     {name:'Contaminated Rounds',cost:'1CP',desc:'Use in the Shooting phase. Death Guard ranged weapons gain Lethal Hits until the end of the phase.'},
+   ],
+   enhancements:[
+     {name:'Tolling of the Bell',pts:'+10pts',desc:'Contagion rules have 1" extra range from the bearer.'},
+     {name:'Living Plague',pts:'+15pts',desc:'At the end of each Fight phase, all enemy units within 3" suffer D3 mortal wounds.'},
+     {name:'Plaguebringer',pts:'+5pts',desc:'The bearer\'s melee weapons gain the Lethal Hits ability.'},
+     {name:'Wormspitter',pts:'+20pts',desc:'Once per game, target an enemy unit within 18". It suffers 3D3 mortal wounds.'},
+   ]},
+  {faction:'dg', name:'Mortis Operandi', rule:'Contagion Protocols',
+   ruleDesc:'At the start of the Fight phase, each enemy unit within 3" of a Death Guard unit suffers D3 mortal wounds on a 5+.',
+   stratagems:[
+     {name:'Plague Wind',cost:'2CP',desc:'Use at the start of your Shooting phase. Select one Death Guard Psyker. It can cast one additional Psychic power this phase.'},
+     {name:'Cloud of Flies',cost:'1CP',desc:'Until the end of your opponent\'s next turn, a Death Guard unit cannot be targeted by ranged attacks from more than 12" away.'},
+   ],
+   enhancements:[
+     {name:'Arch-Contaminator',pts:'+10pts',desc:'Plague weapons in the bearer\'s unit gain +1 to Wound rolls against non-Vehicle units.'},
+   ]},
+
+  // ── THOUSAND SONS ──
+  {faction:'ts', name:'Cult of Magic', rule:'Disciples of the Forbidden Art',
+   ruleDesc:'Thousand Sons Psykers know one additional Psychic power. Each time a Psychic test is passed, add 1 to the Strength of that power\'s attacks this turn.',
+   stratagems:[
+     {name:'Sorcerous Pact',cost:'1CP',desc:'Use in your Psychic phase. A Thousand Sons Psyker can attempt to manifest one additional Psychic power.'},
+     {name:'Infernal Fusillade',cost:'2CP',desc:'Use in the Shooting phase. A Thousand Sons unit can shoot twice this phase, but cannot move or charge this turn.'},
+     {name:'Warpfate',cost:'1CP',desc:'Use before a Thousand Sons unit makes saves. Until the end of the phase, increase their Invulnerable save by 1.'},
+     {name:'The Flesh Change',cost:'1CP',desc:'Use when a Thousand Sons Character is destroyed. Set up a Chaos Spawn in that model\'s place.'},
+     {name:'Empyric Channelling',cost:'2CP',desc:'Use in the Psychic phase. A Thousand Sons Psyker manifests one power automatically without rolling.'},
+   ],
+   enhancements:[
+     {name:'Prosperine Khopesh',pts:'+10pts',desc:'S+1, AP-3, D2. On an unmodified wound roll of 6, the target suffers 1 mortal wound in addition.'},
+     {name:'Sigil of Corruption',pts:'+15pts',desc:'Enemy units within 12" subtract 1 from Psychic tests.'},
+     {name:'High Acolyte',pts:'+5pts',desc:'The bearer can attempt to manifest one additional Psychic power per phase.'},
+     {name:'Arcane Familiar',pts:'+20pts',desc:'Once per phase, after the bearer manifests a Psychic power, they can immediately use it again on the same target.'},
+   ]},
+  {faction:'ts', name:'Intrusive Thoughts', rule:'Capricious Glamours',
+   ruleDesc:'Each time a Thousand Sons unit is selected to shoot or fight, roll D6. On a 4+, add 1 to all Hit rolls made by that unit this phase.',
+   stratagems:[
+     {name:'Glamour of Tzeentch',cost:'1CP',desc:'Use when a Thousand Sons unit is targeted. Until the end of the phase, your opponent must re-roll successful Hit rolls.'},
+     {name:'Twisted Fate',cost:'2CP',desc:'Once per game. Select one enemy unit. Until your next Command phase, whenever a model in that unit dies, another model in the same unit suffers 1 mortal wound.'},
+   ],
+   enhancements:[
+     {name:'Lord of Forbidden Lore',pts:'+15pts',desc:'The bearer knows 2 additional Psychic powers. Improve the bearer\'s Leadership by 1.'},
+   ]},
+
+  // ── WORLD EATERS ──
+  {faction:'we', name:'Berzerker Warband', rule:'Undying Rage',
+   ruleDesc:'Each time a World Eaters unit destroys an enemy unit in the Fight phase, it can immediately consolidate an additional D6" towards the nearest enemy unit.',
+   stratagems:[
+     {name:'Wrathful Charge',cost:'1CP',desc:'Use when a World Eaters unit makes a Charge move. Until the end of the turn, that unit\'s melee weapons gain Devastating Wounds.'},
+     {name:'Frenzied Slaughter',cost:'2CP',desc:'Use at the start of the Fight phase. A World Eaters unit fights again at the end of the phase.'},
+     {name:'Blood Tithes',cost:'1CP',desc:'Use each time a World Eaters unit destroys an enemy unit. Gain 1 Blood Tithe point. Spend 4 points to summon a Bloodthirster within 3" of a World Eaters unit.'},
+     {name:'Leave None Alive',cost:'1CP',desc:'Use when a World Eaters unit consolidates. Add 3" to the consolidation move.'},
+     {name:'Raging Onslaught',cost:'1CP',desc:'A World Eaters unit can Advance and Charge this turn.'},
+   ],
+   enhancements:[
+     {name:'Berzerker Glaive',pts:'+10pts',desc:'S+1, AP-2, D2. This model\'s unit can fight twice per Fight phase.'},
+     {name:'Collar of Khorne',pts:'+15pts',desc:'The bearer is immune to Psychic powers. Mortal wounds allocated to the bearer are ignored on a 4+.'},
+     {name:'Rage Incarnate',pts:'+20pts',desc:'The bearer has +2 Attacks and +2 Strength. Once per battle, it can fight twice in one phase.'},
+     {name:'Mark of the Skull Throne',pts:'+5pts',desc:'Each time the bearer destroys an enemy model with a melee attack, regain 1 lost wound.'},
+   ]},
+  {faction:'we', name:'Gore Tide', rule:'Relentless Slaughterers',
+   ruleDesc:'World Eaters Berzerker units that make a Charge move add 1 to all Attacks and Strength characteristics until the end of the Fight phase.',
+   stratagems:[
+     {name:'Tide of Red',cost:'2CP',desc:'Use at the start of the Fight phase. All World Eaters Berzerker units within 6" of a friendly Character gain +1 to Hit rolls.'},
+     {name:'Savagery Beyond Reason',cost:'1CP',desc:'Use when a Berzerker unit is selected to fight. It can make its full attacks even if it is below half-strength.'},
+   ],
+   enhancements:[
+     {name:'Gore-slicked Chainaxes',pts:'+10pts',desc:'The bearer\'s Chainaxe has AP-2 and Devastating Wounds.'},
+   ]},
+
+  // ── EMPEROR'S CHILDREN ──
+  {faction:'ec', name:'Slaaneshi Host', rule:'Excess of Violence',
+   ruleDesc:'Each time a model in an Emperor\'s Children unit makes an attack that destroys an enemy model, that attacking model can make one additional attack.',
+   stratagems:[
+     {name:'Symphonic Screech',cost:'1CP',desc:'Use in the Fight phase. Until the end of the phase, enemy units subtract 2 from their Leadership characteristic.'},
+     {name:'Stimulated by Pain',cost:'1CP',desc:'Use when an Emperor\'s Children unit suffers wounds. Until the end of the phase, that unit gains +1 Attack for each wound suffered.'},
+     {name:'Hypersonic Screaming',cost:'2CP',desc:'Use in the Shooting phase. An Emperor\'s Children unit\'s sonic weapons gain Devastating Wounds.'},
+   ],
+   enhancements:[
+     {name:'Raiment Of Exquisite Sensation',pts:'+10pts',desc:'The bearer has a 4+ Invulnerable save and at the start of each Fight phase gains +1 Attack.'},
+   ]},
+
+  // ── CHAOS DAEMONS ──
+  {faction:'cd', name:'Daemonic Incursion', rule:'Legions of Chaos',
+   ruleDesc:'Select one of the four Chaos Gods. All Daemon units in your army dedicated to that God gain their relevant ability. (Khorne: +1A melee; Tzeentch: 5+ Invuln; Nurgle: -1 to wound; Slaanesh: +1 to Advance)',
+   stratagems:[
+     {name:'Warp Surge',cost:'1CP',desc:'Use in the Fight phase. A Daemon unit gets +1 Attacks and +1 Strength.'},
+     {name:'Daemonic Ritual',cost:'2CP',desc:'At the start of your Movement phase, you may set up a Daemon unit anywhere on the battlefield more than 9" from all enemy units.'},
+     {name:'Corruption',cost:'1CP',desc:'A Daemon unit\'s attacks gain the Lethal Hits ability this phase.'},
+     {name:'Locus of Sorcery',cost:'1CP',desc:'A Tzeentch Daemon Psyker can manifest one additional power.'},
+     {name:'Blood Frenzy',cost:'1CP',desc:'A Khorne Daemon unit that makes a Charge move gains +D3 Attacks for the Fight phase.'},
+   ],
+   enhancements:[
+     {name:'Warp-touched',pts:'+10pts',desc:'The bearer has the Fly ability and +2" Move.'},
+     {name:'Arch-Herald',pts:'+15pts',desc:'Daemon units within 6" of the bearer can re-roll Advance and Charge rolls.'},
+   ]},
+
+  // ── ORKS ──
+  {faction:'ork', name:"Waaagh! Tribe", rule:"It's a Waaagh!",
+   ruleDesc:'Once per battle, at the start of your Charge phase, you can call a Waaagh! Until the end of the turn, add 1 to the Attacks of all Ork units, and all Ork units can Advance and Charge.',
+   stratagems:[
+     {name:'Unstoppable Green Tide',cost:'1CP',desc:'Use when an Ork Infantry unit is destroyed. Set it back up anywhere more than 9" from enemy units with D3+3 models.'},
+     {name:'More Dakka!',cost:'1CP',desc:'Use in the Shooting phase. An Ork unit\'s ranged weapons gain Sustained Hits 1.'},
+     {name:'Power of the Waaagh!',cost:'2CP',desc:'During a Waaagh! turn, an Ork unit\'s melee weapons gain +1 Damage.'},
+     {name:'Ramming Speed',cost:'1CP',desc:'Use when an Ork Vehicle makes a Charge move. That vehicle gains +1 Attack and +2 Strength this phase.'},
+     {name:'Get Stuck In, Ladz!',cost:'1CP',desc:'An Ork unit can fight again at the end of the Fight phase.'},
+     {name:'Breakin\' Heads',cost:'1CP',desc:'Use before a Morale test. An Ork unit automatically passes the test.'},
+   ],
+   enhancements:[
+     {name:'Da Biggest Boss',pts:'+15pts',desc:'Waaagh! aura extends to 12" instead of 6". Add 1 to the Ld of friendly Ork units within 12".'},
+     {name:'Headwoppa\'s Killchoppa',pts:'+10pts',desc:'S+2, AP-2, D3. If this kills a Character, gain +1 to all Hit rolls until end of turn.'},
+     {name:'Orky Know-Wots',pts:'+5pts',desc:'The bearer\'s unit can re-roll Advance rolls.'},
+     {name:'Brutal but Kunnin\'',pts:'+20pts',desc:'Once per turn, select one enemy unit within 18". Until the end of the turn, that unit cannot benefit from cover.'},
+   ]},
+  {faction:'ork', name:'Green Tide', rule:'Endless Mob',
+   ruleDesc:'When an Ork Boyz, Gretchin or Beast Snagga unit is destroyed, roll D6. On a 4+, that unit is placed in Reserves and returns at the end of your next Movement phase within 6" of any table edge.',
+   stratagems:[
+     {name:'Mob Up',cost:'1CP',desc:'Use at the start of your Movement phase. Two friendly Ork Boyz units within 3" of each other can merge into one unit.'},
+     {name:'The Tide Cannot Stop',cost:'2CP',desc:'Use at the start of the Fight phase. All Ork Infantry units add 1 to their Attacks this phase.'},
+     {name:'Overwhelming Numbers',cost:'1CP',desc:'When an Ork Infantry unit fights, add 1 to Hit rolls for each 5 models above 10 in that unit.'},
+   ],
+   enhancements:[
+     {name:'Loot It!',pts:'+10pts',desc:'After an Ork unit destroys an enemy Vehicle, it can immediately move 6" as if it were the Movement phase.'},
+   ]},
+  {faction:'ork', name:'Dread Mob', rule:'Walking Scrapyard',
+   ruleDesc:'Ork Vehicle units in your army have the Feel No Pain 6+ ability. Each time an Ork Vehicle is destroyed, before removing it, roll D6. On a 4+, it shoots all of its weapons at the nearest visible enemy unit.',
+   stratagems:[
+     {name:'WAAAGH! Power Surge',cost:'2CP',desc:'Use at the start of your Shooting phase. An Ork Vehicle adds D6 to its Move and can fire all weapons as if it had not moved.'},
+     {name:'Kustomized Weapons',cost:'1CP',desc:'An Ork Vehicle\'s weapons gain +1 to Wound rolls against non-Infantry units.'},
+   ],
+   enhancements:[
+     {name:'Extra Armour Plates',pts:'+10pts',desc:'Reduce all Damage taken by the bearer by 1 (minimum 1).'},
+   ]},
+  {faction:'ork', name:'Bully Boyz', rule:'Big and Brutal',
+   ruleDesc:'Ork Meganobz, Nobz and Gretchin units gain +1 Toughness. Meganobz have the Lone Operative ability.',
+   stratagems:[
+     {name:'Show \'Em Who\'s Boss',cost:'1CP',desc:'Use at the start of the Fight phase. A Nobz or Meganobz unit gains +2 Attacks.'},
+     {name:'Grot Shield',cost:'1CP',desc:'When a Nobz unit is targeted by ranged attacks, you can sacrifice a Gretchin model within 3" to intercept one hit.'},
+   ],
+   enhancements:[
+     {name:'Mega-forcefield',pts:'+15pts',desc:'The bearer has a 4+ Invulnerable save. Reduce Damage taken by the bearer by 1.'},
+   ]},
+
+  // ── TYRANIDS ──
+  {faction:'tyr', name:'Invasion Fleet', rule:'Instinctive Threat Response',
+   ruleDesc:'At the start of each turn, if any Tyranid Synapse unit is on the battlefield, all friendly Tyranid units within 12" of a Synapse unit have the Objective Secured ability.',
+   stratagems:[
+     {name:'Metabolic Overdrive',cost:'1CP',desc:'Use at the start of your Movement phase. A Tyranid unit Advances 6" and can still charge this turn.'},
+     {name:'Scorch Bugs',cost:'1CP',desc:'A Tyranid unit\'s weapons with Torrent gain +1 to Wound rolls.'},
+     {name:'Adrenaline Surge',cost:'2CP',desc:'A Tyranid unit that has already fought can fight again at the end of the Fight phase.'},
+     {name:'Spawning of Horrors',cost:'2CP',desc:'Once per game. Summon a unit of 10 Termagants or Hormagaunts within 6" of a Tyranid Character, more than 9" from enemies.'},
+     {name:'Voracious Appetite',cost:'1CP',desc:'Each time a Tyranid Monster destroys an enemy model with a melee attack, regain D3 lost wounds.'},
+     {name:'Tunnel Networks',cost:'1CP',desc:'A Tyranid Infantry unit can move through terrain as though it were not there until the end of the Movement phase.'},
+   ],
+   enhancements:[
+     {name:'Biomorphic Furnace',pts:'+10pts',desc:'The bearer\'s melee attacks gain Devastating Wounds. The bearer regains 1 wound at the start of each Command phase.'},
+     {name:'Heightened Senses',pts:'+5pts',desc:'Subtract 1 from Hit rolls of ranged attacks targeting the bearer\'s unit.'},
+     {name:'The Maw-claws of Thyrax',pts:'+15pts',desc:'Melee weapon. Each time this kills a model, the bearer regains all lost wounds.'},
+     {name:'Resonance Barrb',pts:'+20pts',desc:'Once per battle, at the start of the Fight phase, enemy units within 6" suffer D3 mortal wounds.'},
+   ]},
+  {faction:'tyr', name:'Crusher Stampede', rule:'Titanic Fury',
+   ruleDesc:'Tyranid Monster units can charge even if they Advanced. Each time a Tyranid Monster makes a Charge move, add 1 to Attacks and Strength until the end of the Fight phase.',
+   stratagems:[
+     {name:'Lumbering Behemoth',cost:'1CP',desc:'A Tyranid Monster ignores all movement penalties from terrain this turn.'},
+     {name:'Murderous Tide',cost:'2CP',desc:'Two Tyranid Monster units within 6" of each other both fight again at the end of the Fight phase.'},
+     {name:'Trampling Advance',cost:'1CP',desc:'When a Tyranid Monster moves, enemy units it moves over suffer D3 mortal wounds on a 4+.'},
+   ],
+   enhancements:[
+     {name:'Alpha Beast',pts:'+10pts',desc:'Friendly Tyranid Monster units within 6" add 1 to their Toughness.'},
+   ]},
+  {faction:'tyr', name:'Vanguard Onslaught', rule:'Hyper-adaptation',
+   ruleDesc:'Tyranid Infantry units gain the Scouts 6" ability. The first time each Tyranid unit charges each turn, add 1 to the Advance and Charge rolls.',
+   stratagems:[
+     {name:'Sudden Strikes',cost:'1CP',desc:'A Tyranid unit set up in Reserves can be set up anywhere more than 6" from enemies (instead of 9").'},
+     {name:'Death Frenzy',cost:'2CP',desc:'When a Tyranid Infantry unit is destroyed, before removing it, it fights one final time.'},
+   ],
+   enhancements:[
+     {name:'Toxin Sacs',pts:'+10pts',desc:'The bearer\'s unit re-rolls failed Wound rolls in melee.'},
+   ]},
+
+  // ── NECRONS ──
+  {faction:'nec', name:'Awakened Dynasty', rule:'The Relentless Legion',
+   ruleDesc:'At the end of each of your turns, roll one D6 for each destroyed Necron Infantry model (except C\'tan Shards). On a 4+, that model is returned to its unit with 1 wound remaining.',
+   stratagems:[
+     {name:'Eternal Guardian',cost:'1CP',desc:'Use when a Necron unit makes Reanimation Protocol rolls. Re-roll any number of the dice.'},
+     {name:'Solar Pulse',cost:'1CP',desc:'Until the end of your opponent\'s next turn, subtract 1 from Hit rolls for ranged attacks targeting Necron units.'},
+     {name:'Nanomachines',cost:'2CP',desc:'A Necron Character regains D3 wounds at the start of your Command phase.'},
+     {name:'We Are Legion',cost:'1CP',desc:'When a Necron Warrior unit attempts Reanimation Protocols, add 1 to all the rolls.'},
+     {name:'Adaptive Circuitry',cost:'1CP',desc:'A Necron Vehicle unit ignores all negative modifiers to its characteristics.'},
+     {name:'Quantum Deflection',cost:'2CP',desc:'Use when a Necron unit is targeted. Weapons with Damage 1 cannot target this unit until the end of the phase.'},
+   ],
+   enhancements:[
+     {name:'Sempiternal Weave',pts:'+15pts',desc:'The bearer has a 2+ Save and reduce Damage of attacks by 1.'},
+     {name:'Veil of Darkness',pts:'+20pts',desc:'Once per battle, the bearer can teleport their unit anywhere more than 9" from enemies.'},
+     {name:'Voltaic Staff',pts:'+10pts',desc:'Ranged: R24", A3, BS2+, S8, AP-3, D2. Lethal Hits.'},
+     {name:'The Orb of Eternity',pts:'+5pts',desc:'Once per battle, a Necron unit within 3" automatically passes all Reanimation Protocols this turn.'},
+   ]},
+  {faction:'nec', name:'Hypercrypt Legion', rule:'Translocation Interdict',
+   ruleDesc:'At the start of your Movement phase, you can select up to two Necron units and remove them from the battlefield. At the start of your next Movement phase, set them up anywhere more than 9" from enemies.',
+   stratagems:[
+     {name:'Phased Stride',cost:'1CP',desc:'A Necron unit that arrives from Reserve this turn can move and charge normally.'},
+     {name:'Disruption Fields',cost:'2CP',desc:'Use when a Necron unit arrives from Reserve. All enemy units within 6" of where it was placed suffer D3 mortal wounds.'},
+     {name:'Crackling Energy',cost:'1CP',desc:'A Necron unit\'s weapons gain the Melta D3 ability until the end of the Shooting phase.'},
+   ],
+   enhancements:[
+     {name:'Phase Shifter',pts:'+15pts',desc:'The bearer has a 4++ Invulnerable save. Once per game, can teleport 12" as if it were the Movement phase.'},
+   ]},
+  {faction:'nec', name:'Canoptek Court', rule:'Endless Swarm',
+   ruleDesc:'Necron Canoptek units in your army have the Objective Secured ability. At the end of each of your turns, add D3 Canoptek Scarab Swarm models to a friendly unit of Canoptek Scarabs within 6" of a Canoptek Spyder.',
+   stratagems:[
+     {name:'Repair Protocols',cost:'1CP',desc:'A Canoptek Spyder within 3" of a Necron Vehicle restores D3 lost wounds to that Vehicle.'},
+     {name:'Swarm Tactics',cost:'1CP',desc:'Until the end of the turn, Canoptek units count as having 2 extra models for objective control.'},
+   ],
+   enhancements:[
+     {name:'Scarab Hive',pts:'+10pts',desc:'The bearer generates D3+3 Scarab Swarm models at the start of each of your Command phases.'},
+   ]},
+
+  // ── T'AU EMPIRE ──
+  {faction:'tau', name:'Kauyon', rule:'Patient Hunter',
+   ruleDesc:'At the start of your third and subsequent turns, select one friendly T\'au Empire unit. That unit can shoot twice this turn (but only once if it is within Engagement Range).',
+   stratagems:[
+     {name:'Strike from the Shadows',cost:'1CP',desc:'A T\'au unit set up using Infiltrate can be set up within 6" of any battlefield edge, more than 6" from enemies.'},
+     {name:'Coordinated Engagement',cost:'1CP',desc:'Two T\'au units target the same enemy unit. Add 1 to Hit rolls for both units.'},
+     {name:'Seek and Destroy',cost:'2CP',desc:'A T\'au unit that can see a specific enemy unit can shoot at that unit even if it is in cover without penalty.'},
+     {name:'Pulse Bomb',cost:'2CP',desc:'Once per battle. An enemy unit within 12" of a T\'au unit suffers D6+2 mortal wounds.'},
+     {name:'Supporting Fire',cost:'1CP',desc:'When an enemy unit declares a charge, T\'au units within 6" of the targeted unit can fire Overwatch.'},
+   ],
+   enhancements:[
+     {name:'Exemplar of the Kauyon',pts:'+10pts',desc:'The bearer can use the Kauyon ability once per turn instead of once per battle round.'},
+     {name:'Puretide Engram Neurochip',pts:'+20pts',desc:'Once per battle, the bearer can shoot twice without spending the Kauyon CP.'},
+     {name:'Multi-Spectrum Sensor Suite',pts:'+15pts',desc:'Friendly T\'au units within 6" of the bearer ignore cover saves and do not suffer penalties for moving and shooting Heavy weapons.'},
+     {name:'Thermoneutronic Projector',pts:'+5pts',desc:'Heavy Flamer variant: R12", A2D6, S6, AP-2, D1, Torrent, Ignores Cover.'},
+   ]},
+  {faction:'tau', name:"Mont'ka", rule:'Killing Blow',
+   ruleDesc:'In your first and second turns, select one friendly T\'au unit. Until the end of the turn, that unit can Advance without penalty to shooting, and adds 1 to all Hit rolls.',
+   stratagems:[
+     {name:'Decisive Action',cost:'1CP',desc:'A T\'au Commander can use their For the Greater Good ability a second time this turn.'},
+     {name:'Rapid Deployment',cost:'1CP',desc:'A T\'au unit in Reserves can arrive from Reserves at the end of the Movement phase regardless of game turn.'},
+     {name:'Into the Fray',cost:'2CP',desc:'A T\'au unit can Advance and Charge this turn.'},
+   ],
+   enhancements:[
+     {name:'The Eight\'s Stratagem',pts:'+10pts',desc:'Once per battle, the bearer can immediately use For the Greater Good without spending CP.'},
+   ]},
+  {faction:'tau', name:'Retaliation Cadre', rule:'Focused Strikes',
+   ruleDesc:'Each time a T\'au Battlesuit unit is within 6" of a friendly T\'au Character, add 1 to Hit rolls for ranged attacks made by that unit.',
+   stratagems:[
+     {name:'Massed Fire',cost:'2CP',desc:'A Battlesuit unit can shoot at a different target for each weapon this phase.'},
+     {name:'Blistering Assault',cost:'1CP',desc:'A Battlesuit unit can re-roll Advance and Charge rolls.'},
+   ],
+   enhancements:[
+     {name:'Signature Systems: Iridium Battlesuit',pts:'+15pts',desc:'The bearer has a 2+ Save and 4++ Invulnerable save.'},
+   ]},
+
+  // ── AELDARI ──
+  {faction:'aeld', name:'Warhost', rule:'Ancient Doom',
+   ruleDesc:'Aeldari units gain +1 to Hit when targeting units with the Chaos keyword. Additionally, all Aeldari units within 6" of a Farseer or Warlock do not suffer wound penalties for being below half-strength.',
+   stratagems:[
+     {name:'Forewarned',cost:'1CP',desc:'An Aeldari unit can Overwatch on a 4+ instead of 6+.'},
+     {name:'Phantasm',cost:'1CP',desc:'Remove an Aeldari unit from the battlefield and set it up anywhere more than 9" from enemies.'},
+     {name:'Fire and Fade',cost:'1CP',desc:'After an Aeldari unit shoots, it can move up to 6" as if it were the Movement phase.'},
+     {name:'Tears of Isha',cost:'1CP',desc:'An Aeldari unit ignores all wounds on a 4+ for the rest of the phase.'},
+     {name:'Webway Strike',cost:'2CP',desc:'An Aeldari unit held in Reserve can be set up anywhere more than 6" from enemies at the end of any Movement phase.'},
+     {name:'Embolden',cost:'1CP',desc:'An Aeldari unit automatically passes a Morale test.'},
+   ],
+   enhancements:[
+     {name:'Faolchú\'s Wing',pts:'+10pts',desc:'Add 3" to the bearer\'s Move. The bearer can Fly.'},
+     {name:'The Phoenix Gem',pts:'+20pts',desc:'When the bearer is destroyed, all enemy units within 3" suffer D3 mortal wounds, then set up the bearer with D3 wounds remaining nearby.'},
+     {name:'Shard of Anaris',pts:'+15pts',desc:'Melee weapon: S+3, AP-4, D3. The bearer fights first in every Fight phase.'},
+     {name:'Shiftshroud of Alanssair',pts:'+5pts',desc:'The bearer has the Stealth ability. Subtract 1 from Hit rolls targeting the bearer.'},
+   ]},
+  {faction:'aeld', name:'Aspect Host', rule:'Warrior Path',
+   ruleDesc:'Each Aspect Warrior unit gains a unique bonus based on their shrine (Banshees: always strike first; Scorpions: AP-1 in melee; Fire Dragons: Melta 2 on melee; Dark Reapers: ignore Cover on ranged attacks; Dire Avengers: +1 Attacks on a Defend).',
+   stratagems:[
+     {name:'Path of War',cost:'1CP',desc:'An Aspect Warrior unit ignores all penalties to Hit rolls.'},
+     {name:'Avatar\'s Presence',cost:'2CP',desc:'An Aspect Warrior unit within 9" of the Avatar re-rolls all failed Hit and Wound rolls this phase.'},
+     {name:'Court of the Young King',cost:'1CP',desc:'Each time an Aspect Warrior model is destroyed, roll D6. On a 5+, it is not removed.'},
+   ],
+   enhancements:[
+     {name:'War Mask',pts:'+10pts',desc:'The bearer cannot be selected as a target for Psychic powers. Immune to Terror effects.'},
+   ]},
+  {faction:'aeld', name:'Strands of Fate', rule:'Gift of Prescience',
+   ruleDesc:'At the start of each battle round, roll 3D6 (the Fate dice). Before any dice roll this turn (by either player), you can substitute one of the Fate dice for the result of that roll.',
+   stratagems:[
+     {name:'Guided Strike',cost:'1CP',desc:'An Aeldari unit can re-roll all failed Hit or Wound rolls this phase (choose one).'},
+     {name:'Future Vision',cost:'2CP',desc:'At the start of your Command phase, add D3 Fate dice to your pool.'},
+     {name:'Doomed Target',cost:'1CP',desc:'Select one enemy unit. Until your next Command phase, attacks targeting that unit re-roll Wound rolls of 1.'},
+   ],
+   enhancements:[
+     {name:'Eye of Isha',pts:'+15pts',desc:'The bearer generates one Fate Die at the start of each of their phases.'},
+   ]},
+
+  // ── ADEPTA SORORITAS ──
+  {faction:'sos', name:'Blood Rose', rule:'Righteous Rage',
+   ruleDesc:'Sisters of Battle units gain +1 Attack in the Fight phase. Each time a Sister model is destroyed by a melee attack, roll D6. On a 5+, the attacking unit suffers 1 mortal wound.',
+   stratagems:[
+     {name:'Savage Tactician',cost:'1CP',desc:'A Sisters unit can Advance and Charge this turn.'},
+     {name:'Martyrdom',cost:'1CP',desc:'When a Sisters Character is destroyed, before removing it, it can fight one final time.'},
+     {name:'Holy Rage',cost:'2CP',desc:'A Sisters unit in the Fight phase gains +1 to Attacks, +1 Strength and Devastating Wounds.'},
+     {name:'Miraculous Intervention',cost:'2CP',desc:'Use a Miracle dice as any value from 1-6 automatically.'},
+     {name:'Sacred Rites',cost:'1CP',desc:'A Sisters unit ignores all modifiers to Hit and Wound rolls this phase.'},
+   ],
+   enhancements:[
+     {name:'Litanies of Faith',pts:'+10pts',desc:'Friendly Sisters units within 6" of the bearer re-roll Miracle dice results of 1.'},
+     {name:'Blade of Saint Ellynor',pts:'+15pts',desc:'Melee: S+1, AP-3, D3. Each wound inflicted generates one Miracle dice.'},
+     {name:'The Sigil Militant',pts:'+5pts',desc:'The bearer\'s unit can re-roll failed saving throws.'},
+     {name:'Mantle of Ophelia',pts:'+20pts',desc:'4++ Invulnerable save. The bearer has the Lone Operative ability.'},
+   ]},
+  {faction:'sos', name:'Hallowed Martyrs', rule:'Endure and Prevail',
+   ruleDesc:'Sisters of Battle units with the Act of Faith ability can use it even if they have already done so this turn. In addition, generate one Miracle dice each time a Sisters model is destroyed.',
+   stratagems:[
+     {name:'Gleaming Piety',cost:'1CP',desc:'A Sisters unit generates D3 Miracle dice if it is within 3" of an objective marker at the start of your Command phase.'},
+     {name:'Penitent Engines',cost:'1CP',desc:'A Penitent Engine unit can fight twice in the Fight phase, but suffers D3 mortal wounds after fighting the second time.'},
+   ],
+   enhancements:[
+     {name:'Heroine in the Making',pts:'+10pts',desc:'The bearer generates one Miracle dice each time it destroys an enemy model.'},
+   ]},
+
+  // ── ADEPTUS MECHANICUS ──
+  {faction:'ad', name:'Cohort Cybernetica', rule:'Protector Protocols',
+   ruleDesc:'Adeptus Mechanicus Automata units (Kataphrons, Kastelan Robots) have a 5+ Invulnerable save. Tech-Priests within 6" of an Automata unit can transfer wounds to themselves on a 2+.',
+   stratagems:[
+     {name:'Benediction of the Omnissiah',cost:'1CP',desc:'A Tech-Priest restores D3 wounds to an Adeptus Mechanicus unit within 3".'},
+     {name:'Binharic Override',cost:'2CP',desc:'Until the end of your turn, an Adeptus Mechanicus unit can fire Overwatch for free.'},
+     {name:'Cawl\'s Wrath',cost:'1CP',desc:'An Adeptus Mechanicus unit\'s ranged weapons gain the Sustained Hits 1 ability.'},
+     {name:'Machine Rite',cost:'1CP',desc:'An Adeptus Mechanicus Vehicle regains D3 lost wounds.'},
+     {name:'Protector Dogma',cost:'1CP',desc:'An Adeptus Mechanicus unit gains a 4+ Invulnerable save until end of phase.'},
+   ],
+   enhancements:[
+     {name:'Panoptic Relay',pts:'+10pts',desc:'Friendly Adeptus Mechanicus units within 6" can re-roll Hit rolls of 1.'},
+     {name:'Holy Sigil of Cybernetica',pts:'+15pts',desc:'The bearer and its unit have the Feel No Pain 5+ ability.'},
+     {name:'Canticle of the Omnissiah',pts:'+5pts',desc:'Once per phase, the bearer can grant one friendly unit within 6" one of the following: +1 Hit, +1 Wound, or +1 Save.'},
+   ]},
+  {faction:'ad', name:'Skitarii Hunter Cohort', rule:'Doctrines of War',
+   ruleDesc:'At the start of each of your Command phases, select one Skitarii Ranger Doctrine or Vanguard Doctrine for all Skitarii units. Ranger Doctrine: +6" to all ranged weapon ranges. Vanguard Doctrine: -1 to Strength of enemy units within 1".',
+   stratagems:[
+     {name:'Elimination Volley',cost:'1CP',desc:'A Skitarii unit adds 1 to all Wound rolls in the Shooting phase.'},
+     {name:'Rad-saturation',cost:'2CP',desc:'Until the end of the turn, enemy units within 3" of a Vanguard unit subtract 1 from their Toughness.'},
+     {name:'Electrostatic Onslaught',cost:'1CP',desc:'A Skitarii unit\'s weapons gain the Shock rule: unmodified wound rolls of 6 cause 1 mortal wound.'},
+   ],
+   enhancements:[
+     {name:'Skull of Elder Nikola',pts:'+10pts',desc:'The bearer\'s unit re-rolls all Wound rolls of 1.'},
+   ]},
+
+  // ── ASTRA MILITARUM ──
+  {faction:'am', name:'Combined Regiment', rule:'Voice of Command',
+   ruleDesc:'Astra Militarum Officers can issue two orders per turn (instead of one). Platoon Commanders can issue one additional order.',
+   stratagems:[
+     {name:'Overlapping Fields of Fire',cost:'1CP',desc:'Two Astra Militarum units target the same enemy unit. Both units get +1 to Wound rolls.'},
+     {name:'Ambush',cost:'1CP',desc:'An Astra Militarum Infantry unit set up in Reserves can arrive at the end of any Movement phase.'},
+     {name:'Death Volley',cost:'2CP',desc:'An Astra Militarum Infantry unit fires twice this phase.'},
+     {name:'Shield of Humanity',cost:'1CP',desc:'Use when a non-Character Astra Militarum Infantry unit is destroyed. Remove one mortal wound from a nearby friendly Character.'},
+     {name:'Tank Orders',cost:'1CP',desc:'An Astra Militarum Vehicle unit fires at full effect regardless of how many wounds it has lost.'},
+     {name:'Platoon Counter-Charge',cost:'1CP',desc:'Astra Militarum Infantry units within 6" of a charging enemy unit can fire Overwatch.'},
+   ],
+   enhancements:[
+     {name:'Laurels of Command',pts:'+10pts',desc:'The bearer can issue one additional order per turn.'},
+     {name:'Grand Strategist',pts:'+20pts',desc:'Once per battle, gain D3 CP.'},
+     {name:'Drill Master',pts:'+5pts',desc:'Orders issued by the bearer auto-succeed.'},
+     {name:'Tactical Genius',pts:'+15pts',desc:'Friendly Astra Militarum units within 6" add 1 to their OC characteristic.'},
+   ]},
+  {faction:'am', name:'Hammer of the Emperor', rule:'Rolling Thunder',
+   ruleDesc:'Astra Militarum Vehicle units have the Feel No Pain 6+ ability. Each time a Vehicle unit fires Ordnance weapons, add 1 to the number of shots.',
+   stratagems:[
+     {name:'Grinding Advance',cost:'1CP',desc:'An Astra Militarum Vehicle fires without penalty for moving this turn.'},
+     {name:'Armour Superiority',cost:'2CP',desc:'An Astra Militarum Vehicle\'s weapons gain +1 to Damage until end of Shooting phase.'},
+     {name:'Punishing Barrage',cost:'1CP',desc:'An Astra Militarum vehicle\'s Ordnance weapon gains Blast.'},
+   ],
+   enhancements:[
+     {name:'Tank Commander\'s Expertise',pts:'+10pts',desc:'Friendly Vehicle units within 6" re-roll Hit rolls of 1.'},
+   ]},
+
+  // ── GREY KNIGHTS ──
+  {faction:'gk', name:'Teleport Strike Force', rule:'Gate of Infinity',
+   ruleDesc:'At the start of your Movement phase, you can select up to three Grey Knights Infantry units and remove them. At the start of your next Movement phase, redeploy them anywhere more than 9" from enemies.',
+   stratagems:[
+     {name:'Psybolt Ammunition',cost:'1CP',desc:'Grey Knights Storm Bolters gain AP-1 until end of Shooting phase.'},
+     {name:'Warp Shaping',cost:'2CP',desc:'A Grey Knights unit that arrives from Deepstrike can move normally this turn.'},
+     {name:'Hammer of the Righteous',cost:'1CP',desc:'A Grey Knights unit\'s melee attacks gain Devastating Wounds until end of Fight phase.'},
+     {name:'Sanctic Soulburst',cost:'2CP',desc:'A Grey Knights Psyker manifests one Psychic power automatically without rolling.'},
+     {name:'Purifying Flame',cost:'1CP',desc:'A Grey Knights unit\'s attacks gain the Anti-Daemon 4+ ability this phase.'},
+   ],
+   enhancements:[
+     {name:'First to the Fray',pts:'+10pts',desc:'The bearer and its unit can charge in the same turn they arrive from Deepstrike.'},
+     {name:'Sigil of Exigence',pts:'+15pts',desc:'The bearer can use the Gate of Infinity ability once per turn as a free action.'},
+     {name:'Strands of Fate',pts:'+5pts',desc:'Once per battle, re-roll any one Psychic test.'},
+   ]},
+  {faction:'gk', name:'Warpbane Task Force', rule:'Banishment',
+   ruleDesc:'Grey Knights units have +1 to Wound rolls against Chaos Daemon units. Daemon units within 6" of a Grey Knights Psyker subtract 1 from their Leadership.',
+   stratagems:[
+     {name:'Daemon Ward',cost:'1CP',desc:'A Grey Knights unit gains a 5+ Invulnerable save against Daemon attacks.'},
+     {name:'Banishment Ritual',cost:'2CP',desc:'A Grey Knights Psyker within 3" of a Daemon unit forces it to make a Leadership test. On a fail, the Daemon unit suffers D3+3 mortal wounds.'},
+   ],
+   enhancements:[
+     {name:'Nemesis Doomglaive',pts:'+15pts',desc:'S+3, AP-4, D3. Add +2 to Wound rolls against Daemon units.'},
+   ]},
+
+  // ── LEAGUES OF VOTANN ──
+  {faction:'lov', name:'Oathband', rule:'Ancestral Wrath',
+   ruleDesc:'Once per battle, at the start of your Command phase, call an Ancestral Wrath. Until the end of the turn, all Leagues of Votann units re-roll all Hit rolls.',
+   stratagems:[
+     {name:'Oathsworn Grudge',cost:'1CP',desc:'At the start of the battle, mark one enemy unit. All Leagues of Votann attacks against that unit gain +1 to Wound.'},
+     {name:'Hearthkyn Defence',cost:'1CP',desc:'A Leagues of Votann unit in cover gains +1 to Saving throws.'},
+     {name:'Mass Disintegration',cost:'2CP',desc:'A Leagues of Votann unit\'s weapons gain Devastating Wounds until end of Shooting phase.'},
+     {name:'Overclock',cost:'1CP',desc:'A Leagues of Votann Vehicle can move and shoot Heavy weapons without penalty.'},
+   ],
+   enhancements:[
+     {name:'I Am Become Death',pts:'+15pts',desc:'The bearer\'s melee attacks gain Devastating Wounds. Once per game, the bearer can declare a Grimnyr Grudge.'},
+     {name:'Rune-etched Armour',pts:'+10pts',desc:'3+ Save and 5+ Invulnerable save.'},
+   ]},
+
+  // ── IMPERIAL KNIGHTS ──
+  {faction:'ik', name:'Noble Lance', rule:'Martial Excellence',
+   ruleDesc:'Imperial Knights within 12" of a friendly Character gain +1 to Hit rolls. When a Knight makes a Stomp attack, roll 2D6 and discard the lowest.',
+   stratagems:[
+     {name:'The Thunderstrike',cost:'2CP',desc:'An Imperial Knight Titanic unit fires twice this turn.'},
+     {name:'Shoulder the Burden',cost:'1CP',desc:'An Imperial Knight within 3" of another friendly Knight can transfer D3 wounds to the other Knight (which ignores them).'},
+     {name:'Ion Bulwark',cost:'1CP',desc:'An Imperial Knight\'s Invulnerable save is improved by 1 until end of phase.'},
+     {name:'Heirlooms of the Household',cost:'1CP',desc:'An Imperial Knight re-rolls one Hit and one Wound roll.'},
+   ],
+   enhancements:[
+     {name:'Heirloom of Conquest',pts:'+20pts',desc:'Once per battle, an Imperial Knight can fire twice in the Shooting phase.'},
+     {name:'Knight\'s Honour',pts:'+10pts',desc:'The bearer has the Lone Operative ability. Add 1 to the bearer\'s OC.'},
+   ]},
+
+  // ── GENESTEALER CULTS ──
+  {faction:'gsc', name:'Biosantic Broodsurge', rule:'Lurk in the Shadows',
+   ruleDesc:'Genestealer Cults units set up using Ambush can be set up anywhere more than 6" from enemy units (instead of 9"). Each Genestealer Cults unit in Ambush generates one Cult Ambush dice at the start of the battle.',
+   stratagems:[
+     {name:'Pureblood Broodkin',cost:'1CP',desc:'A Genestealer Cults unit from Ambush gains +1 to Attacks and Strength this turn.'},
+     {name:'Lying in Wait',cost:'2CP',desc:'A Genestealer Cults unit can be redeployed into Ambush at the start of any turn.'},
+     {name:'Mass Hypnosis',cost:'1CP',desc:'An enemy unit within 6" of a Magus or Primus subtracts 1 from all Hit rolls until end of phase.'},
+     {name:'Atalan Jackals\' Blitz',cost:'1CP',desc:'An Atalan Jackals unit can Advance and Charge this turn.'},
+   ],
+   enhancements:[
+     {name:'Warlord Trait: Glutton for Punishment',pts:'+10pts',desc:'When the bearer is destroyed, it can fight one final time.'},
+   ]},
+
+  // ── DRUKHARI ──
+  {faction:'dru', name:'Realspace Raiders', rule:'Raid Spoils',
+   ruleDesc:'Each time a Drukhari unit destroys an enemy model, gain one Soul Point. At the end of each turn, if you have 5+ Soul Points, all Drukhari units regain D3 wounds (or D3 models if Infantry).',
+   stratagems:[
+     {name:'Torment Grenade',cost:'1CP',desc:'An enemy unit within 6" of a Drukhari unit subtracts 1 from Ld and has -1 OC.'},
+     {name:'Cruel Deception',cost:'1CP',desc:'A Drukhari unit can Fall Back and still shoot and charge this turn.'},
+     {name:'Labyrinthine Cunning',cost:'2CP',desc:'Redeploy up to three Drukhari units at the start of the battle, after both armies have been set up.'},
+     {name:'Web of Lies',cost:'1CP',desc:'A Drukhari unit gains the benefit of cover even if it is in the open.'},
+   ],
+   enhancements:[
+     {name:'Archon\'s Favour',pts:'+10pts',desc:'The bearer can use Soul Points as if 3 additional had been gained.'},
+   ]},
+];
+
+const UNITS = [
+  // ══ SPACE MARINES ══
+  {id:'sm_captain',faction:'sm',name:'Captain',role:'Character',pts:80,
+   baseSize:'40mm',
+   stats:[{m:'Captain',M:'6"',T:4,Sv:'3+',W:5,Ld:'6+',OC:1}],
+   weapons:[
+     {name:'Master-crafted bolt rifle',range:'24"',A:2,BS:'2+',S:4,AP:-1,D:2,kw:'—'},
+     {name:'Bolt pistol',range:'12"',A:1,BS:'2+',S:4,AP:0,D:1,kw:'Pistol'},
+     {name:'Relic blade',range:'Melee',A:5,BS:'2+',S:8,AP:-3,D:2,kw:'—'},
+   ],
+   wargearOptions:[
+     'This model\'s master-crafted bolt rifle can be replaced with 1 ranged weapon from the Ranged Weapons list.',
+     'This model\'s relic blade can be replaced with 1 melee weapon from the Melee Weapons list.',
+     'This model can be equipped with 1 Shield of Faith (5+ Invulnerable save).',
+   ],
+   abilities:[
+     {name:'Rites of Battle',desc:'Friendly Adeptus Astartes Core units within 6" re-roll Hit rolls of 1.'},
+     {name:'Iron Will',desc:'Each time this model is wounded, if that attack has a Damage characteristic of 2 or more, reduce the Damage by 1.'},
+     {name:'Leader',desc:'This model can be attached to an Adeptus Astartes Infantry unit. While this model is leading a unit, models in that unit have the Leader benefit.'},
+   ],
+   composition:[{models:'1 Captain',pts:80}],
+   loadout:'This model is equipped with: master-crafted bolt rifle; bolt pistol; relic blade.',
+   factionKeywords:['Adeptus Astartes'],
+   keywords:['Character','Infantry','Captain','Adeptus Astartes']},
+
+  {id:'sm_librarian',faction:'sm',name:'Librarian',role:'Character',pts:75,
+   stats:[{m:'Librarian',M:'6"',T:4,Sv:'3+',W:4,Ld:'6+',OC:1}],
+   weapons:[
+     {name:'Force sword',range:'Melee',A:4,BS:'3+',S:6,AP:-2,D:'D3',kw:'Psychic'},
+     {name:'Bolt pistol',range:'12"',A:1,BS:'2+',S:4,AP:0,D:1,kw:'Pistol'},
+   ],
+   abilities:[
+     {name:'Psyker',desc:'This model can manifest 2 Psychic powers per Psychic phase.'},
+     {name:'Deny the Witch',desc:'This model can attempt to deny one Psychic power per phase.'},
+   ],keywords:['Character','Infantry','Psyker','Adeptus Astartes']},
+
+  {id:'sm_chaplain',faction:'sm',name:'Chaplain',role:'Character',pts:75,
+   stats:[{m:'Chaplain',M:'6"',T:4,Sv:'3+',W:4,Ld:'5+',OC:1}],
+   weapons:[
+     {name:'Crozius arcanum',range:'Melee',A:5,BS:'2+',S:6,AP:-1,D:2,kw:'—'},
+     {name:'Bolt pistol',range:'12"',A:1,BS:'2+',S:4,AP:0,D:1,kw:'Pistol'},
+   ],
+   abilities:[
+     {name:'Litanies of Battle',desc:'This model knows 3 Litanies. At the start of your Command phase, pick 1 to chant. On a 3+, it takes effect.'},
+     {name:'Spiritual Leader',desc:'Friendly Adeptus Astartes Infantry within 6" re-roll Morale tests.'},
+   ],keywords:['Character','Infantry','Adeptus Astartes']},
+
+  {id:'sm_intercessors',faction:'sm',name:'Intercessor Squad',role:'Troops',pts:75,
+   stats:[{m:'Intercessor Sergeant',M:'6"',T:4,Sv:'3+',W:2,Ld:'6+',OC:2},{m:'Intercessor',M:'6"',T:4,Sv:'3+',W:2,Ld:'6+',OC:2}],
+   weapons:[
+     {name:'Bolt rifle',range:'30"',A:2,BS:'3+',S:4,AP:-1,D:1,kw:'Rapid Fire 1'},
+     {name:'Bolt pistol',range:'12"',A:1,BS:'3+',S:4,AP:0,D:1,kw:'Pistol'},
+     {name:'Power fist',range:'Melee',A:3,BS:'3+',S:8,AP:-2,D:2,kw:'—'},
+   ],
+   wargearOptions:[
+     '1 Intercessor Sergeant\'s bolt rifle can be replaced with 1 weapon from the Astartes Ranged Weapons list.',
+     '1 Intercessor Sergeant can be equipped with 1 melee weapon.',
+     'For every 5 models, 1 model can replace their bolt rifle with 1 auto bolt rifle or 1 stalker bolt rifle.',
+   ],
+   abilities:[
+     {name:'Objective Secured',desc:'Counts as controlling objectives even if outnumbered.'},
+     {name:'Fire Discipline',desc:'When this unit remains stationary, Bolt rifles become Rapid Fire 2.'},
+   ],
+   composition:[{models:'5 models',pts:90},{models:'10 models',pts:180}],
+   loadout:'Every model is equipped with: bolt rifle; bolt pistol. The Intercessor Sergeant is also equipped with: power fist.',
+   factionKeywords:['Adeptus Astartes'],
+   keywords:['Infantry','Core','Adeptus Astartes']},
+
+  {id:'sm_assault_intercessors',faction:'sm',name:'Assault Intercessor Squad',role:'Troops',pts:75,
+   baseSize:'32mm',
+   stats:[{m:'Assault Intercessor Sergeant',M:'6"',T:4,Sv:'3+',W:2,Ld:'6+',OC:2},{m:'Assault Intercessor',M:'6"',T:4,Sv:'3+',W:2,Ld:'6+',OC:2}],
+   weapons:[
+     {name:'Heavy bolt pistol',range:'18"',A:1,BS:'3+',S:4,AP:-1,D:1,kw:'Pistol'},
+     {name:'Astartes chainsword',range:'Melee',A:4,BS:'3+',S:4,AP:-1,D:1,kw:'—'},
+     {name:'Power fist',range:'Melee',A:3,BS:'3+',S:8,AP:-2,D:2,kw:'—'},
+   ],
+   wargearOptions:[
+     '1 Assault Intercessor Sergeant\'s astartes chainsword can be replaced with 1 melee weapon from the Melee Weapons list.',
+   ],
+   abilities:[
+     {name:'Objective Secured',desc:'Counts as controlling objectives even if outnumbered.'},
+     {name:'Close-quarters Fighters',desc:'+1 Attack on the Charge.'},
+   ],
+   composition:[{models:'5 models',pts:75},{models:'10 models',pts:150}],
+   loadout:'Every model is equipped with: heavy bolt pistol; astartes chainsword. The Assault Intercessor Sergeant is also equipped with: power fist.',
+   factionKeywords:['Adeptus Astartes'],
+   keywords:['Infantry','Core','Adeptus Astartes']},
+
+  {id:'sm_infiltrators',faction:'sm',name:'Infiltrator Squad',role:'Troops',pts:100,
+   stats:[{m:'Infiltrator Sergeant',M:'6"',T:4,Sv:'3+',W:2,Ld:'6+',OC:2},{m:'Infiltrator',M:'6"',T:4,Sv:'3+',W:2,Ld:'6+',OC:2}],
+   weapons:[
+     {name:'Marksman bolt carbine',range:'24"',A:2,BS:'3+',S:4,AP:0,D:1,kw:'Ignores Cover'},
+     {name:'Bolt pistol',range:'12"',A:1,BS:'3+',S:4,AP:0,D:1,kw:'Pistol'},
+   ],
+   abilities:[
+     {name:'Infiltrate',desc:'Set up anywhere more than 9" from enemy deployment zone and enemy units.'},
+     {name:'Cutoff Communications',desc:'Enemy units within 3" cannot receive Orders or use Stratagems targeting them.'},
+   ],keywords:['Infantry','Core','Adeptus Astartes']},
+
+  {id:'sm_terminators',faction:'sm',name:'Terminator Squad',role:'Elites',pts:175,
+   baseSize:'40mm',
+   stats:[{m:'Terminator Sergeant',M:'5"',T:5,Sv:'2+',W:3,Ld:'6+',OC:1},{m:'Terminator',M:'5"',T:5,Sv:'2+',W:3,Ld:'6+',OC:1}],
+   weapons:[
+     {name:'Storm bolter',range:'24"',A:2,BS:'3+',S:4,AP:0,D:1,kw:'Rapid Fire 2'},
+     {name:'Assault cannon',range:'24"',A:6,BS:'3+',S:6,AP:-1,D:1,kw:'Devastating Wounds'},
+     {name:'Power fist',range:'Melee',A:3,BS:'4+',S:8,AP:-2,D:2,kw:'—'},
+     {name:'Chainfist',range:'Melee',A:3,BS:'4+',S:8,AP:-4,D:2,kw:'Anti-Vehicle 2+'},
+   ],
+   wargearOptions:[
+     '1 Terminator Sergeant\'s storm bolter can be replaced with 1 weapon from the Ranged Weapons list.',
+     '1 Terminator Sergeant\'s power fist can be replaced with 1 weapon from the Melee Weapons list.',
+     'For every 5 models, 1 Terminator can replace their storm bolter with 1 heavy weapon (assault cannon, cyclone missile launcher, or heavy flamer).',
+   ],
+   abilities:[
+     {name:'Teleport Strike',desc:'During deployment, you can set up this unit in Deepstrike instead of on the battlefield. At the end of any of your Movement phases, set it up anywhere more than 9" from all enemy units.'},
+     {name:'Crux Terminatus',desc:'Models in this unit have a 5+ Invulnerable save.'},
+   ],
+   composition:[{models:'5 models',pts:175},{models:'10 models',pts:350}],
+   loadout:'Every model is equipped with: storm bolter; power fist. 1 Terminator is also equipped with: assault cannon; chainfist.',
+   factionKeywords:['Adeptus Astartes'],
+   keywords:['Infantry','Core','Terminator','Adeptus Astartes']},
+
+  {id:'sm_vanguard_vets',faction:'sm',name:'Vanguard Veteran Squad',role:'Elites',pts:130,
+   stats:[{m:'Veteran Sergeant',M:'6"',T:4,Sv:'3+',W:2,Ld:'6+',OC:2},{m:'Vanguard Veteran',M:'6"',T:4,Sv:'3+',W:2,Ld:'6+',OC:2}],
+   weapons:[
+     {name:'Heavy bolt pistol',range:'18"',A:1,BS:'3+',S:4,AP:-1,D:1,kw:'Pistol'},
+     {name:'Lightning claw',range:'Melee',A:4,BS:'3+',S:4,AP:-2,D:1,kw:'Twin-linked'},
+     {name:'Power fist',range:'Melee',A:3,BS:'3+',S:8,AP:-2,D:2,kw:'—'},
+   ],
+   abilities:[
+     {name:'Veteran Warriors',desc:'Re-roll Hit rolls of 1 in melee.'},
+     {name:'Heroic Charge',desc:'+1 Attack on the Charge.'},
+   ],keywords:['Infantry','Core','Adeptus Astartes']},
+
+  {id:'sm_dreadnought',faction:'sm',name:'Dreadnought',role:'Elites',pts:105,
+   stats:[{m:'Dreadnought',M:'6"',T:9,Sv:'3+',W:8,Ld:'6+',OC:3}],
+   weapons:[
+     {name:'Dreadnought combat weapon',range:'Melee',A:5,BS:'4+',S:12,AP:-2,D:3,kw:'Siege Master'},
+     {name:'Multi-melta',range:'18"',A:2,BS:'3+',S:9,AP:-4,D:'D6',kw:'Melta 2'},
+     {name:'Twin lascannon',range:'48"',A:2,BS:'3+',S:12,AP:-3,D:'D6+1',kw:'Twin-linked'},
+     {name:'Assault cannon',range:'24"',A:6,BS:'3+',S:6,AP:-1,D:1,kw:'Devastating Wounds'},
+   ],
+   abilities:[
+     {name:'Duty Eternal',desc:'Halve Damage of attacks with D≥2.'},
+     {name:'Machine Spirit',desc:'Can shoot after losing its last remaining model.'},
+   ],keywords:['Walker','Vehicle','Adeptus Astartes','Dreadnought']},
+
+  {id:'sm_redemptor',faction:'sm',name:'Redemptor Dreadnought',role:'Elites',pts:155,
+   stats:[{m:'Redemptor Dreadnought',M:'8"',T:10,Sv:'3+',W:12,Ld:'6+',OC:3}],
+   weapons:[
+     {name:'Macro plasma incinerator',range:'36"',A:3,BS:'3+',S:8,AP:-4,D:'D3+3',kw:'Blast, Hazardous'},
+     {name:'Onslaught gatling cannon',range:'30"',A:12,BS:'3+',S:6,AP:-1,D:1,kw:'Sustained Hits 1'},
+     {name:'Redemptor fist',range:'Melee',A:6,BS:'4+',S:13,AP:-3,D:'D3+3',kw:'—'},
+   ],
+   abilities:[
+     {name:'Duty Eternal',desc:'Halve Damage of attacks with D≥2.'},
+     {name:'Explodes',desc:'When destroyed, D6" explosion causing D3 mortal wounds on a 4+.'},
+   ],keywords:['Walker','Vehicle','Adeptus Astartes','Dreadnought']},
+
+  {id:'sm_brutalis',faction:'sm',name:'Brutalis Dreadnought',role:'Elites',pts:150,
+   stats:[{m:'Brutalis Dreadnought',M:'8"',T:10,Sv:'3+',W:12,Ld:'6+',OC:3}],
+   weapons:[
+     {name:'Twin bolt rifle',range:'24"',A:4,BS:'3+',S:4,AP:-1,D:1,kw:'Sustained Hits 1'},
+     {name:'Brutalis fists',range:'Melee',A:8,BS:'4+',S:12,AP:-2,D:2,kw:'—'},
+   ],
+   abilities:[
+     {name:'Brutal Charge',desc:'On a Charge, add 1 to all Attacks and Strength in Fight phase.'},
+     {name:'Wall of Steel',desc:'Overwatch on a 5+.'},
+   ],keywords:['Walker','Vehicle','Adeptus Astartes','Dreadnought']},
+
+  {id:'sm_predator',faction:'sm',name:'Predator Annihilator',role:'Heavy Support',pts:130,
+   stats:[{m:'Predator Annihilator',M:'10"',T:9,Sv:'3+',W:11,Ld:'6+',OC:3}],
+   weapons:[
+     {name:'Twin lascannon',range:'48"',A:2,BS:'3+',S:12,AP:-3,D:'D6+1',kw:'Twin-linked'},
+     {name:'Heavy bolter',range:'36"',A:3,BS:'3+',S:5,AP:-1,D:2,kw:'Sustained Hits 1'},
+   ],
+   abilities:[
+     {name:'Killshot',desc:'If 3+ Predators are within 6", +1 Damage on all weapons.'},
+   ],keywords:['Vehicle','Adeptus Astartes']},
+
+  {id:'sm_outriders',faction:'sm',name:'Outrider Squad',role:'Fast Attack',pts:90,
+   stats:[{m:'Outrider Sergeant',M:'12"',T:5,Sv:'3+',W:3,Ld:'6+',OC:2},{m:'Outrider',M:'12"',T:5,Sv:'3+',W:3,Ld:'6+',OC:2}],
+   weapons:[
+     {name:'Twin bolt rifle',range:'24"',A:4,BS:'3+',S:4,AP:-1,D:1,kw:'Rapid Fire 2'},
+     {name:'Astartes chainsword',range:'Melee',A:4,BS:'3+',S:4,AP:-1,D:1,kw:'—'},
+   ],
+   abilities:[
+     {name:'Turbo-boost',desc:'Can Advance 6" and still fire.'},
+     {name:'Expert Riders',desc:'Can Fall Back and still shoot or charge.'},
+   ],keywords:['Mounted','Core','Adeptus Astartes']},
+
+  {id:'sm_land_raider',faction:'sm',name:'Land Raider',role:'Heavy Support',pts:235,
+   stats:[{m:'Land Raider',M:'10"',T:12,Sv:'2+',W:16,Ld:'6+',OC:5}],
+   weapons:[
+     {name:'Twin lascannon',range:'48"',A:2,BS:'3+',S:12,AP:-3,D:'D6+1',kw:'Twin-linked'},
+     {name:'Twin heavy bolter',range:'36"',A:6,BS:'3+',S:5,AP:-1,D:2,kw:'Twin-linked, Sustained Hits 1'},
+   ],
+   abilities:[
+     {name:'Power of the Machine Spirit',desc:'Can move and fire Heavy weapons without penalty.'},
+     {name:'Assault Vehicle',desc:'Units disembarking can make a normal move.'},
+   ],keywords:['Vehicle','Transport','Adeptus Astartes']},
+
+  // ══ CHAOS SPACE MARINES ══
+  {id:'csm_chaos_lord',faction:'csm',name:'Chaos Lord',role:'Character',pts:75,
+   stats:[{m:'Chaos Lord',M:'6"',T:4,Sv:'3+',W:5,Ld:'6+',OC:1}],
+   weapons:[
+     {name:'Daemon blade',range:'Melee',A:6,BS:'2+',S:5,AP:-2,D:2,kw:'Devastating Wounds'},
+     {name:'Bolt pistol',range:'12"',A:1,BS:'2+',S:4,AP:0,D:1,kw:'Pistol'},
+   ],
+   abilities:[
+     {name:'Bitter Enmity',desc:'Re-roll Hit rolls of 1 on all attacks.'},
+     {name:'Lord of Chaos (Aura)',desc:'Heretic Astartes Core units within 6" re-roll Hit rolls of 1.'},
+   ],keywords:['Character','Infantry','Chaos','Heretic Astartes']},
+
+  {id:'csm_daemon_prince',faction:'csm',name:'Daemon Prince',role:'Character',pts:155,
+   stats:[{m:'Daemon Prince',M:'8"',T:7,Sv:'3+',W:9,Ld:'6+',OC:3}],
+   weapons:[
+     {name:'Hellforged sword',range:'Melee',A:7,BS:'3+',S:9,AP:-3,D:3,kw:'Devastating Wounds'},
+     {name:'Daemonic axe',range:'Melee',A:5,BS:'3+',S:10,AP:-2,D:2,kw:'—'},
+   ],
+   abilities:[
+     {name:'Daemonic',desc:'4+ Invulnerable save.'},
+     {name:'Winged Leap',desc:'Can Fly. On a Charge, +2 Attacks.'},
+   ],keywords:['Character','Monster','Daemon','Chaos','Heretic Astartes']},
+
+  {id:'csm_sorcerer',faction:'csm',name:'Sorcerer',role:'Character',pts:90,
+   stats:[{m:'Sorcerer',M:'6"',T:4,Sv:'3+',W:4,Ld:'6+',OC:1}],
+   weapons:[
+     {name:'Force stave',range:'Melee',A:4,BS:'3+',S:6,AP:-1,D:'D3',kw:'Psychic'},
+     {name:'Inferno bolt pistol',range:'12"',A:1,BS:'2+',S:4,AP:-2,D:1,kw:'Pistol'},
+   ],
+   abilities:[
+     {name:'Psyker',desc:'Manifests 2 Psychic powers per phase.'},
+     {name:'Dark Pact',desc:'Before manifesting a power, gain D3 mortal wounds to add D6 to the Psychic test.'},
+   ],keywords:['Character','Infantry','Psyker','Chaos','Heretic Astartes']},
+
+  {id:'csm_dark_apostle',faction:'csm',name:'Dark Apostle',role:'Character',pts:95,
+   stats:[{m:'Dark Apostle',M:'6"',T:4,Sv:'3+',W:5,Ld:'5+',OC:1}],
+   weapons:[
+     {name:'Cursed crozius',range:'Melee',A:5,BS:'2+',S:6,AP:-2,D:2,kw:'—'},
+   ],
+   abilities:[
+     {name:'Oration of Despair',desc:'Friendly Heretic Astartes within 6" re-roll Morale tests.'},
+     {name:'Dark Litanies',desc:'Knows 2 Dark Prayers. Chant one per Command phase on a 2+.'},
+   ],keywords:['Character','Infantry','Chaos','Heretic Astartes']},
+
+  {id:'csm_chaos_marines',faction:'csm',name:'Chaos Space Marines',role:'Troops',pts:90,
+   stats:[{m:'Aspiring Champion',M:'6"',T:4,Sv:'3+',W:2,Ld:'7+',OC:2},{m:'Chaos Space Marine',M:'6"',T:4,Sv:'3+',W:2,Ld:'7+',OC:2}],
+   weapons:[
+     {name:'Boltgun',range:'24"',A:2,BS:'3+',S:4,AP:0,D:1,kw:'Rapid Fire 1'},
+     {name:'Bolt pistol',range:'12"',A:1,BS:'3+',S:4,AP:0,D:1,kw:'Pistol'},
+     {name:'Astartes chainsword',range:'Melee',A:4,BS:'3+',S:4,AP:-1,D:1,kw:'—'},
+     {name:'Power fist',range:'Melee',A:3,BS:'3+',S:8,AP:-2,D:2,kw:'—'},
+   ],
+   abilities:[
+     {name:'Malicious Volleys',desc:'Boltguns become Rapid Fire 2 when this unit shoots.'},
+   ],keywords:['Infantry','Core','Chaos','Heretic Astartes']},
+
+  {id:'csm_chosen',faction:'csm',name:'Chosen',role:'Elites',pts:100,
+   stats:[{m:'Chosen Champion',M:'6"',T:4,Sv:'3+',W:3,Ld:'6+',OC:2},{m:'Chosen',M:'6"',T:4,Sv:'3+',W:3,Ld:'6+',OC:2}],
+   weapons:[
+     {name:'Accursed weapon',range:'Melee',A:4,BS:'3+',S:5,AP:-2,D:1,kw:'—'},
+     {name:'Plasma gun',range:'24"',A:1,BS:'3+',S:7,AP:-2,D:2,kw:'Rapid Fire 1'},
+     {name:'Lascannon',range:'48"',A:1,BS:'3+',S:12,AP:-3,D:'D6+1',kw:'Heavy'},
+   ],
+   abilities:[
+     {name:'Champions of Chaos',desc:'Re-roll Hit rolls of 1 on all attacks.'},
+     {name:'Path to Glory',desc:'Each time this unit destroys an enemy unit, gain 1 XP. At 3 XP, improve WS/BS by 1.'},
+   ],keywords:['Infantry','Core','Chaos','Heretic Astartes']},
+
+  {id:'csm_terminators',faction:'csm',name:'Chaos Terminator Squad',role:'Elites',pts:175,
+   stats:[{m:'Chaos Terminator',M:'5"',T:5,Sv:'2+',W:3,Ld:'7+',OC:1}],
+   weapons:[
+     {name:'Combi-bolter',range:'24"',A:2,BS:'3+',S:4,AP:0,D:1,kw:'Rapid Fire 2'},
+     {name:'Accursed weapon',range:'Melee',A:4,BS:'3+',S:5,AP:-2,D:1,kw:'—'},
+     {name:'Power fist',range:'Melee',A:3,BS:'3+',S:8,AP:-2,D:2,kw:'—'},
+     {name:'Reaper autocannon',range:'36"',A:4,BS:'3+',S:7,AP:-1,D:1,kw:'Rapid Fire 2'},
+   ],
+   abilities:[
+     {name:'Teleport Strike',desc:'Can deep strike anywhere more than 9" from enemies.'},
+     {name:'Chaos Terminators',desc:'5+ Invulnerable save.'},
+   ],keywords:['Infantry','Core','Terminator','Chaos','Heretic Astartes']},
+
+  {id:'csm_obliterators',faction:'csm',name:'Obliterators',role:'Elites',pts:140,
+   stats:[{m:'Obliterator',M:'5"',T:6,Sv:'2+',W:4,Ld:'7+',OC:1}],
+   weapons:[
+     {name:'Fleshmetal guns',range:'24"',A:4,BS:'3+',S:8,AP:-2,D:3,kw:'Twin-linked'},
+     {name:'Crushing fists',range:'Melee',A:4,BS:'4+',S:8,AP:-1,D:2,kw:'—'},
+   ],
+   abilities:[
+     {name:'Daemon Construct',desc:'4+ Invulnerable save.'},
+     {name:'Fire Frenzy',desc:'Can fire ranged weapons even in Engagement Range of enemies.'},
+   ],keywords:['Infantry','Chaos','Heretic Astartes']},
+
+  {id:'csm_havocs',faction:'csm',name:'Havocs',role:'Heavy Support',pts:100,
+   stats:[{m:'Havoc Champion',M:'6"',T:4,Sv:'3+',W:2,Ld:'7+',OC:2},{m:'Havoc',M:'6"',T:4,Sv:'3+',W:2,Ld:'7+',OC:2}],
+   weapons:[
+     {name:'Autocannon',range:'48"',A:2,BS:'3+',S:9,AP:-1,D:3,kw:'Heavy'},
+     {name:'Lascannon',range:'48"',A:1,BS:'3+',S:12,AP:-3,D:'D6+1',kw:'Heavy'},
+     {name:'Missile launcher',range:'48"',A:1,BS:'3+',S:10,AP:-2,D:'D6',kw:'Heavy, Blast'},
+   ],
+   abilities:[
+     {name:'Weapon Specialists',desc:'Re-roll Hit rolls of 1 for all ranged attacks.'},
+   ],keywords:['Infantry','Core','Chaos','Heretic Astartes']},
+
+  {id:'csm_helbrute',faction:'csm',name:'Helbrute',role:'Elites',pts:110,
+   stats:[{m:'Helbrute',M:'6"',T:9,Sv:'3+',W:8,Ld:'7+',OC:3}],
+   weapons:[
+     {name:'Helbrute fist',range:'Melee',A:4,BS:'4+',S:14,AP:-3,D:3,kw:'Siege Master'},
+     {name:'Twin lascannon',range:'48"',A:2,BS:'3+',S:12,AP:-3,D:'D6+1',kw:'Twin-linked'},
+     {name:'Multi-melta',range:'18"',A:2,BS:'3+',S:9,AP:-4,D:'D6',kw:'Melta 2'},
+   ],
+   abilities:[
+     {name:'Crewed by the Damned',desc:'When destroyed, on a 4+ it can shoot or fight once more.'},
+     {name:'Enraged Rampage',desc:'+1 Strength on Charge.'},
+   ],keywords:['Monster','Chaos','Heretic Astartes','Helbrute']},
+
+  {id:'csm_maulerfiend',faction:'csm',name:'Maulerfiend',role:'Heavy Support',pts:135,
+   stats:[{m:'Maulerfiend',M:'10"',T:10,Sv:'3+',W:12,Ld:'7+',OC:4}],
+   weapons:[
+     {name:'Magma cutters',range:'Melee',A:4,BS:'4+',S:8,AP:-4,D:'D6',kw:'Anti-Vehicle 4+'},
+     {name:'Lasher tendrils',range:'Melee',A:4,BS:'4+',S:6,AP:-1,D:1,kw:'—'},
+   ],
+   abilities:[
+     {name:'Daemonic',desc:'4+ Invulnerable save.'},
+     {name:'Predatory Leap',desc:'Can charge after Advancing.'},
+   ],keywords:['Monster','Daemon','Chaos','Heretic Astartes']},
+
+  {id:'csm_forgefiend',faction:'csm',name:'Forgefiend',role:'Heavy Support',pts:150,
+   stats:[{m:'Forgefiend',M:'8"',T:10,Sv:'3+',W:12,Ld:'7+',OC:4}],
+   weapons:[
+     {name:'Hades autocannons',range:'36"',A:4,BS:'3+',S:9,AP:-1,D:3,kw:'Rapid Fire 2'},
+     {name:'Ectoplasma cannons',range:'24"',A:3,BS:'3+',S:8,AP:-3,D:'D3',kw:'Hazardous'},
+   ],
+   abilities:[
+     {name:'Daemonic',desc:'4+ Invulnerable save.'},
+   ],keywords:['Monster','Daemon','Chaos','Heretic Astartes']},
+
+  // ══ DEATH GUARD ══
+  {id:'dg_typhus',faction:'dg',name:'Typhus, Host of the Destroyer Hive',role:'Character',pts:110,
+   stats:[{m:'Typhus',M:'5"',T:6,Sv:'2+',W:6,Ld:'6+',OC:1}],
+   weapons:[
+     {name:'Manreaper',range:'Melee',A:6,BS:'2+',S:8,AP:-3,D:2,kw:'Plague Weapon, Lethal Hits'},
+     {name:'Destroyer Hive',range:'6"',A:6,BS:'N/A',S:5,AP:0,D:1,kw:'Torrent, Lethal Hits'},
+   ],
+   abilities:[
+     {name:'Destroyer Hive',desc:'Enemy units within 3" subtract 1 from all rolls.'},
+     {name:'Arch-Contaminator',desc:'Plague weapons in friendly Death Guard units within 6" gain +1 to Wound rolls.'},
+   ],keywords:['Character','Infantry','Terminator','Death Guard','Daemon']},
+
+  {id:'dg_plague_marines',faction:'dg',name:'Plague Marines',role:'Troops',pts:110,
+   stats:[{m:'Plague Champion',M:'5"',T:5,Sv:'3+',W:2,Ld:'6+',OC:2},{m:'Plague Marine',M:'5"',T:5,Sv:'3+',W:2,Ld:'6+',OC:2}],
+   weapons:[
+     {name:'Boltgun',range:'24"',A:2,BS:'3+',S:4,AP:0,D:1,kw:'Rapid Fire 1'},
+     {name:'Plague blade',range:'Melee',A:4,BS:'3+',S:5,AP:-1,D:1,kw:'Plague Weapon'},
+     {name:'Blight launcher',range:'24"',A:2,BS:'3+',S:6,AP:-1,D:2,kw:'Plague Weapon'},
+   ],
+   abilities:[
+     {name:'Disgustingly Resilient',desc:'5+ Feel No Pain save.'},
+     {name:'Objective Secured',desc:'Counts as controlling objectives even if outnumbered.'},
+   ],keywords:['Infantry','Core','Death Guard']},
+
+  {id:'dg_poxwalkers',faction:'dg',name:'Poxwalkers',role:'Troops',pts:50,
+   stats:[{m:'Poxwalker',M:'4"',T:4,Sv:'7+',W:1,Ld:'8+',OC:2}],
+   weapons:[
+     {name:'Improvised weapon',range:'Melee',A:2,BS:'5+',S:3,AP:0,D:1,kw:'Plague Weapon'},
+   ],
+   abilities:[
+     {name:'Curse of the Walking Pox',desc:'When a non-Character model is destroyed within 1", add one Poxwalker model to this unit on a 4+.'},
+     {name:'Disgustingly Resilient',desc:'5+ Feel No Pain.'},
+   ],keywords:['Infantry','Core','Death Guard','Daemon']},
+
+  {id:'dg_blightlords',faction:'dg',name:'Blightlord Terminators',role:'Elites',pts:195,
+   stats:[{m:'Blightlord Champion',M:'4"',T:6,Sv:'2+',W:3,Ld:'6+',OC:1},{m:'Blightlord Terminator',M:'4"',T:6,Sv:'2+',W:3,Ld:'6+',OC:1}],
+   weapons:[
+     {name:'Combi-bolter',range:'24"',A:2,BS:'3+',S:4,AP:0,D:1,kw:'Rapid Fire 2'},
+     {name:'Flail of corruption',range:'Melee',A:4,BS:'3+',S:6,AP:-2,D:2,kw:'Plague Weapon'},
+   ],
+   abilities:[
+     {name:'Disgustingly Resilient',desc:'5+ Feel No Pain.'},
+     {name:'Teleport Strike',desc:'Can deep strike more than 9" from enemies.'},
+   ],keywords:['Infantry','Core','Terminator','Death Guard']},
+
+  {id:'dg_bloat_drone',faction:'dg',name:'Foetid Bloat-drone',role:'Fast Attack',pts:90,
+   stats:[{m:'Bloat-drone',M:'8"',T:9,Sv:'3+',W:10,Ld:'7+',OC:3}],
+   weapons:[
+     {name:'Plague probe',range:'Melee',A:3,BS:'4+',S:6,AP:-1,D:'D3',kw:'Plague Weapon'},
+     {name:'Fleshmower',range:'Melee',A:6,BS:'4+',S:5,AP:-2,D:1,kw:'Plague Weapon, Lethal Hits'},
+   ],
+   abilities:[
+     {name:'Daemonic',desc:'4+ Invulnerable save.'},
+     {name:'Fly',desc:'Can move over terrain.'},
+   ],keywords:['Vehicle','Daemon','Death Guard']},
+
+  {id:'dg_plagueburst',faction:'dg',name:'Plagueburst Crawler',role:'Heavy Support',pts:160,
+   stats:[{m:'Plagueburst Crawler',M:'6"',T:11,Sv:'3+',W:12,Ld:'7+',OC:3}],
+   weapons:[
+     {name:'Plagueburst mortar',range:'48"',A:'D6+1',BS:'3+',S:8,AP:-1,D:'D3',kw:'Blast, Plague Weapon'},
+     {name:'Heavy Slugger',range:'36"',A:6,BS:'3+',S:6,AP:0,D:1,kw:'Sustained Hits 1'},
+   ],
+   abilities:[
+     {name:'Disgustingly Resilient',desc:'5+ Feel No Pain.'},
+     {name:'Crawler',desc:'Ignores terrain movement penalties.'},
+   ],keywords:['Vehicle','Death Guard']},
+
+  // ══ THOUSAND SONS ══
+  {id:'ts_ahriman',faction:'ts',name:'Ahriman',role:'Character',pts:120,
+   stats:[{m:'Ahriman',M:'6"',T:4,Sv:'3+',W:5,Ld:'5+',OC:1}],
+   weapons:[
+     {name:'Black Staff of Ahriman',range:'Melee',A:5,BS:'2+',S:6,AP:-3,D:'D3',kw:'Psychic'},
+     {name:'Inferno bolt pistol',range:'12"',A:1,BS:'2+',S:4,AP:-2,D:1,kw:'Pistol'},
+   ],
+   abilities:[
+     {name:'Psychic Mastery',desc:'Manifests 3 Psychic powers per phase. Re-roll Psychic tests of 1.'},
+     {name:'Disc of Tzeentch',desc:'Can Fly. +2 Move.'},
+   ],keywords:['Character','Infantry','Psyker','Thousand Sons','Daemon']},
+
+  {id:'ts_rubric_marines',faction:'ts',name:'Rubric Marines',role:'Troops',pts:100,
+   stats:[{m:'Aspiring Sorcerer',M:'6"',T:4,Sv:'3+',W:2,Ld:'6+',OC:2},{m:'Rubric Marine',M:'6"',T:4,Sv:'3+',W:2,Ld:'7+',OC:2}],
+   weapons:[
+     {name:'Inferno boltgun',range:'24"',A:2,BS:'3+',S:4,AP:-2,D:1,kw:'Rapid Fire 1'},
+     {name:'Warpflamer',range:'12"',A:'D6',BS:'N/A',S:5,AP:-2,D:1,kw:'Torrent'},
+   ],
+   abilities:[
+     {name:'All is Dust',desc:'Reduce AP of attacks against this unit by 1 (minimum AP 0) if AP is -1 or 0.'},
+     {name:'Objective Secured',desc:'Counts as controlling objectives even if outnumbered.'},
+   ],keywords:['Infantry','Core','Thousand Sons']},
+
+  {id:'ts_scarab_occult',faction:'ts',name:'Scarab Occult Terminators',role:'Elites',pts:185,
+   stats:[{m:'Scarab Occult Sorcerer',M:'5"',T:5,Sv:'2+',W:3,Ld:'6+',OC:1},{m:'Scarab Occult Terminator',M:'5"',T:5,Sv:'2+',W:3,Ld:'7+',OC:1}],
+   weapons:[
+     {name:'Inferno combi-bolter',range:'24"',A:2,BS:'3+',S:4,AP:-2,D:1,kw:'Rapid Fire 2'},
+     {name:'Prosperine khopesh',range:'Melee',A:4,BS:'4+',S:6,AP:-2,D:2,kw:'—'},
+   ],
+   abilities:[
+     {name:'All is Dust',desc:'Reduce AP of attacks by 1 if AP is -1 or 0.'},
+     {name:'Teleport Strike',desc:'Can deep strike more than 9" from enemies.'},
+   ],keywords:['Infantry','Core','Terminator','Thousand Sons']},
+
+  // ══ WORLD EATERS ══
+  {id:'we_berzerkers',faction:'we',name:'Khorne Berzerkers',role:'Troops',pts:100,
+   stats:[{m:'Berzerker Champion',M:'6"',T:4,Sv:'3+',W:2,Ld:'6+',OC:2},{m:'Khorne Berzerker',M:'6"',T:4,Sv:'3+',W:2,Ld:'7+',OC:2}],
+   weapons:[
+     {name:'Berzerker chainblade',range:'Melee',A:4,BS:'3+',S:5,AP:-1,D:1,kw:'—'},
+     {name:'Bolt pistol',range:'12"',A:1,BS:'3+',S:4,AP:0,D:1,kw:'Pistol'},
+   ],
+   abilities:[
+     {name:'Frenzied Bloodlust',desc:'+1 Attack on the Charge.'},
+     {name:'No Retreat!',desc:'Can never Fall Back voluntarily.'},
+   ],keywords:['Infantry','Core','Chaos','World Eaters']},
+
+  {id:'we_eightbound',faction:'we',name:'Eightbound',role:'Elites',pts:115,
+   stats:[{m:'Exalted Eightbound',M:'6"',T:5,Sv:'3+',W:3,Ld:'6+',OC:2},{m:'Eightbound',M:'6"',T:5,Sv:'3+',W:3,Ld:'7+',OC:2}],
+   weapons:[
+     {name:'Eightbound eviscerators',range:'Melee',A:5,BS:'3+',S:7,AP:-2,D:2,kw:'—'},
+   ],
+   abilities:[
+     {name:'Frenzied Khornate Devotees',desc:'+2 Attacks during a Waaagh turn or equivalent. Can Advance and Charge.'},
+     {name:'Daemonic Durability',desc:'5+ Feel No Pain save.'},
+   ],keywords:['Infantry','Core','Chaos','World Eaters']},
+
+  {id:'we_jakhals',faction:'we',name:'Jakhals',role:'Troops',pts:55,
+   baseSize:'28.5mm (Dishonoured model 40mm)',
+   stats:[{m:'Jakhal Pack Master',M:'6"',T:4,Sv:'5+',W:1,Ld:'7+',OC:2},{m:'Dishonoured',M:'6"',T:4,Sv:'5+',W:1,Ld:'7+',OC:2},{m:'Jakhal',M:'6"',T:4,Sv:'5+',W:1,Ld:'7+',OC:2}],
+   weapons:[
+     {name:'Autopistol',range:'12"',A:1,BS:'4+',S:3,AP:0,D:1,kw:'Pistol'},
+     {name:'Chainblades',range:'Melee',A:3,BS:'4+',S:3,AP:0,D:1,kw:'—'},
+     {name:'Paired manglers',range:'Melee',A:4,BS:'4+',S:4,AP:0,D:1,kw:'—'},
+     {name:'Mauler chainblade',range:'Melee',A:3,BS:'5+',S:4,AP:-1,D:1,kw:'—'},
+     {name:'Skullsmasher and mangler',range:'Melee',A:2,BS:'4+',S:4,AP:-1,D:2,kw:'—'},
+   ],
+   wargearOptions:[
+     'For every 10 models in this unit, 1 Jakhal\'s chainblades can be replaced with 1 mauler chainblade.',
+     'Any number of Dishonoured models can each have their paired manglers replaced with 1 skullsmasher and mangler.',
+     'For every 10 models, 1 Jakhal can be equipped with 1 icon of Khorne.',
+   ],
+   abilities:[
+     {name:'Objective Ravaged',faction:true,desc:'At the end of your Command phase, if this unit is within range of an objective marker you control, that objective marker remains under your control until your opponent\'s Level of Control over that objective marker is greater than yours at the end of a phase.'},
+     {name:'Icon of Khorne',desc:'If the bearer\'s unit contains one or more Icons of Khorne, each time the bearer\'s unit destroys an enemy unit, you gain 1 Bloodshed point. Each time you make a Blessings of Khorne roll, roll one additional D6 for each Bloodshed point you have, after which, all your Bloodshed points are lost.'},
+   ],
+   composition:[{models:'10 models (1 Pack Master, 1 Dishonoured, 8 Jakhals)',pts:55},{models:'20 models (1 Pack Master, 2 Dishonoured, 17 Jakhals)',pts:110}],
+   loadout:'The Jakhal Pack Master and every Jakhal is equipped with: autopistol; chainblades. Every Dishonoured is equipped with: paired manglers.',
+   factionKeywords:['World Eaters'],
+   keywords:['Infantry','Core','Chaos','Khorne','Jakhals']},
+
+  // ══ ORKS ══
+  {id:'ork_warboss',faction:'ork',name:'Warboss',role:'Character',pts:80,
+   stats:[{m:'Warboss',M:'5"',T:5,Sv:'4+',W:7,Ld:'7+',OC:2}],
+   weapons:[
+     {name:'Da Krushin\' Klaw',range:'Melee',A:5,BS:'3+',S:10,AP:-2,D:3,kw:'—'},
+     {name:'\'Eavy Slugga',range:'12"',A:2,BS:'3+',S:5,AP:-1,D:1,kw:'Pistol'},
+   ],
+   abilities:[
+     {name:'Waaagh! (Aura)',desc:'Friendly Ork Core units within 6" get +1 Attacks.'},
+     {name:'Proper Killy',desc:'+1 Damage on melee attacks.'},
+   ],keywords:['Character','Infantry','Ork']},
+
+  {id:'ork_boyz',faction:'ork',name:'Boyz',role:'Troops',pts:60,
+   stats:[{m:'Boss Nob',M:'5"',T:5,Sv:'6+',W:2,Ld:'7+',OC:2},{m:'Ork Boy',M:'5"',T:5,Sv:'6+',W:1,Ld:'7+',OC:2}],
+   weapons:[
+     {name:'Choppa',range:'Melee',A:2,BS:'3+',S:4,AP:-1,D:1,kw:'—'},
+     {name:'Slugga',range:'12"',A:1,BS:'5+',S:4,AP:0,D:1,kw:'Pistol'},
+     {name:'Rokkit launcha',range:'24"',A:1,BS:'5+',S:9,AP:-2,D:3,kw:'Blast'},
+   ],
+   abilities:[
+     {name:'Mob Rule',desc:'Never take Morale tests. Cannot Fall Back voluntarily.'},
+     {name:'Waaagh!',desc:'+1 Attack on the Charge during a Waaagh turn.'},
+   ],keywords:['Infantry','Core','Ork']},
+
+  {id:'ork_meganobz',faction:'ork',name:'Meganobz',role:'Elites',pts:115,
+   stats:[{m:'Boss Meganob',M:'4"',T:6,Sv:'2+',W:3,Ld:'7+',OC:2},{m:'Meganob',M:'4"',T:6,Sv:'2+',W:3,Ld:'7+',OC:2}],
+   weapons:[
+     {name:'Klaw of Gork',range:'Melee',A:4,BS:'4+',S:12,AP:-3,D:3,kw:'—'},
+     {name:'Shoota',range:'18"',A:2,BS:'5+',S:4,AP:0,D:1,kw:'Rapid Fire 2'},
+   ],
+   abilities:[
+     {name:'Unstoppable Green Tide',desc:'Cannot be targeted by Precision weapons.'},
+   ],keywords:['Infantry','Core','Ork']},
+
+  {id:'ork_deff_dread',faction:'ork',name:'Deff Dread',role:'Elites',pts:85,
+   stats:[{m:'Deff Dread',M:'6"',T:8,Sv:'3+',W:8,Ld:'7+',OC:3}],
+   weapons:[
+     {name:'Klaw of Gork',range:'Melee',A:3,BS:'4+',S:12,AP:-3,D:3,kw:'—'},
+     {name:'Rokkits',range:'24"',A:2,BS:'5+',S:9,AP:-2,D:3,kw:'—'},
+   ],
+   abilities:[
+     {name:'Rampage',desc:'+D3 Attacks when charging.'},
+   ],keywords:['Walker','Vehicle','Ork']},
+
+  {id:'ork_battlewagon',faction:'ork',name:'Battlewagon',role:'Heavy Support',pts:125,
+   stats:[{m:'Battlewagon',M:'10"',T:10,Sv:'3+',W:14,Ld:'7+',OC:4}],
+   weapons:[
+     {name:'Deff rolla',range:'Melee',A:6,BS:'4+',S:8,AP:-2,D:2,kw:'Siege Master'},
+     {name:'Killkannon',range:'24"',A:'D6',BS:'4+',S:8,AP:-2,D:2,kw:'Blast'},
+   ],
+   abilities:[
+     {name:'Transport',desc:'Carries up to 20 Ork Infantry models.'},
+     {name:'Ram',desc:'On a Charge, the Deff Rolla has +1 Strength.'},
+   ],keywords:['Vehicle','Transport','Ork']},
+
+  // ══ TYRANIDS ══
+  {id:'tyr_hive_tyrant',faction:'tyr',name:'Hive Tyrant',role:'Character',pts:210,
+   stats:[{m:'Hive Tyrant',M:'8"',T:9,Sv:'2+',W:12,Ld:'6+',OC:3}],
+   weapons:[
+     {name:'Monstrous bonesword',range:'Melee',A:6,BS:'2+',S:9,AP:-3,D:3,kw:'Precision'},
+     {name:'Heavy venom cannon',range:'36"',A:3,BS:'3+',S:10,AP:-3,D:'D6',kw:'Blast'},
+   ],
+   abilities:[
+     {name:'Shadow in the Warp (Aura)',desc:'Enemy units within 18" subtract 1 from Ld and saves vs Psychic.'},
+     {name:'Synapse',desc:'Friendly Tyranid units within 12" can use this model\'s Leadership.'},
+     {name:'Regeneration',desc:'Regains up to D3 wounds at the start of your Command phase.'},
+   ],keywords:['Character','Monster','Synapse','Tyranid']},
+
+  {id:'tyr_termagants',faction:'tyr',name:'Termagants',role:'Troops',pts:60,
+   stats:[{m:'Termagant',M:'6"',T:3,Sv:'6+',W:1,Ld:'8+',OC:2}],
+   weapons:[
+     {name:'Fleshborer',range:'18"',A:1,BS:'4+',S:5,AP:0,D:1,kw:'—'},
+     {name:'Spinefists',range:'12"',A:2,BS:'4+',S:3,AP:0,D:1,kw:'Pistol, Twin-linked'},
+   ],
+   abilities:[
+     {name:'Instinctive Behaviour',desc:'While within 12" of a Synapse unit, re-roll Morale tests.'},
+   ],keywords:['Infantry','Core','Tyranid']},
+
+  {id:'tyr_hormagaunts',faction:'tyr',name:'Hormagaunts',role:'Troops',pts:60,
+   stats:[{m:'Hormagaunt',M:'8"',T:3,Sv:'6+',W:1,Ld:'8+',OC:2}],
+   weapons:[
+     {name:'Scything talons',range:'Melee',A:2,BS:'4+',S:4,AP:0,D:1,kw:'Twin-linked'},
+   ],
+   abilities:[
+     {name:'Bounding Leap',desc:'Can Advance and Charge in the same turn.'},
+     {name:'Instinctive Behaviour',desc:'While within 12" of a Synapse unit, re-roll Morale tests.'},
+   ],keywords:['Infantry','Core','Tyranid']},
+
+  {id:'tyr_genestealers',faction:'tyr',name:'Genestealers',role:'Elites',pts:150,
+   stats:[{m:'Genestealer',M:'8"',T:4,Sv:'5+',W:2,Ld:'7+',OC:2}],
+   weapons:[
+     {name:'Rending claws',range:'Melee',A:4,BS:'3+',S:5,AP:-2,D:1,kw:'—'},
+     {name:'Feeder tendril',range:'Melee',A:1,BS:'3+',S:4,AP:0,D:1,kw:'Anti-Infantry 2+'},
+   ],
+   abilities:[
+     {name:'Lightning Reflexes',desc:'4+ Invulnerable save.'},
+     {name:'Swift Onslaught',desc:'Can Advance and Charge in the same turn.'},
+   ],keywords:['Infantry','Core','Tyranid']},
+
+  {id:'tyr_carnifex',faction:'tyr',name:'Carnifex',role:'Heavy Support',pts:100,
+   stats:[{m:'Carnifex',M:'7"',T:9,Sv:'3+',W:8,Ld:'8+',OC:3}],
+   weapons:[
+     {name:'Scything talons',range:'Melee',A:4,BS:'4+',S:9,AP:-1,D:3,kw:'Twin-linked'},
+     {name:'Bio-plasma',range:'18"',A:3,BS:'4+',S:8,AP:-3,D:2,kw:'Blast'},
+   ],
+   abilities:[
+     {name:'Living Battering Ram',desc:'+2 Attacks on the Charge. Charging units cannot fight before this one.'},
+   ],keywords:['Monster','Tyranid']},
+
+  {id:'tyr_trygon',faction:'tyr',name:'Trygon',role:'Heavy Support',pts:140,
+   stats:[{m:'Trygon',M:'10"',T:9,Sv:'3+',W:14,Ld:'7+',OC:5}],
+   weapons:[
+     {name:'Biostatic rattle',range:'12"',A:6,BS:'4+',S:5,AP:-1,D:1,kw:'—'},
+     {name:'Massive scything talons',range:'Melee',A:6,BS:'4+',S:9,AP:-3,D:3,kw:'—'},
+   ],
+   abilities:[
+     {name:'Tunnel Network',desc:'Can set up in Reserves. When it arrives, a friendly Tyranid Infantry unit can arrive with it more than 6" from enemies.'},
+   ],keywords:['Monster','Tyranid']},
+
+  // ══ NECRONS ══
+  {id:'nec_overlord',faction:'nec',name:'Overlord',role:'Character',pts:95,
+   stats:[{m:'Overlord',M:'6"',T:5,Sv:'3+',W:6,Ld:'6+',OC:1}],
+   weapons:[
+     {name:'Staff of light',range:'18"',A:3,BS:'2+',S:5,AP:-2,D:1,kw:'—'},
+     {name:'Voidblade',range:'Melee',A:5,BS:'2+',S:5,AP:-3,D:1,kw:'Devastating Wounds'},
+   ],
+   abilities:[
+     {name:'My Will Be Done (Aura)',desc:'Friendly Necron Core units within 6" add 1 to Hit rolls.'},
+     {name:'Living Metal',desc:'Regains 1 lost wound at the start of each Command phase.'},
+     {name:'Resurrection Protocols',desc:'When destroyed, on a 4+, return with D3 wounds remaining.'},
+   ],keywords:['Character','Infantry','Necron']},
+
+  {id:'nec_warriors',faction:'nec',name:'Necron Warriors',role:'Troops',pts:80,
+   stats:[{m:'Necron Warrior',M:'5"',T:4,Sv:'4+',W:1,Ld:'7+',OC:2}],
+   weapons:[
+     {name:'Gauss flayer',range:'24"',A:1,BS:'3+',S:4,AP:0,D:1,kw:'Lethal Hits'},
+     {name:'Gauss reaper',range:'12"',A:1,BS:'3+',S:5,AP:-2,D:1,kw:'Lethal Hits'},
+   ],
+   abilities:[
+     {name:'Reanimation Protocols',desc:'At the end of each phase, return D3 destroyed models.'},
+     {name:'Their Number is Legion',desc:'+1 OC per 5 models (max +6).'},
+   ],keywords:['Infantry','Core','Necron']},
+
+  {id:'nec_immortals',faction:'nec',name:'Immortals',role:'Elites',pts:90,
+   stats:[{m:'Immortal',M:'5"',T:5,Sv:'3+',W:1,Ld:'7+',OC:2}],
+   weapons:[
+     {name:'Gauss blaster',range:'24"',A:2,BS:'3+',S:5,AP:-1,D:1,kw:'Rapid Fire 1'},
+     {name:'Tesla carbine',range:'24"',A:2,BS:'3+',S:5,AP:0,D:1,kw:'Sustained Hits 2'},
+   ],
+   abilities:[
+     {name:'Reanimation Protocols',desc:'At the end of each phase, return D3 destroyed models.'},
+   ],keywords:['Infantry','Core','Necron']},
+
+  {id:'nec_lychguard',faction:'nec',name:'Lychguard',role:'Elites',pts:100,
+   stats:[{m:'Lychguard',M:'5"',T:5,Sv:'3+',W:2,Ld:'7+',OC:2}],
+   weapons:[
+     {name:'Hyperphase sword',range:'Melee',A:3,BS:'3+',S:6,AP:-3,D:2,kw:'—'},
+     {name:'Warscythe',range:'Melee',A:3,BS:'3+',S:8,AP:-4,D:2,kw:'—'},
+   ],
+   abilities:[
+     {name:'Dispersion Shield',desc:'4+ Invulnerable save.'},
+     {name:'Reanimation Protocols',desc:'At the end of each phase, return D3 destroyed models.'},
+   ],keywords:['Infantry','Core','Necron']},
+
+  {id:'nec_wraiths',faction:'nec',name:'Canoptek Wraiths',role:'Fast Attack',pts:120,
+   stats:[{m:'Canoptek Wraith',M:'10"',T:5,Sv:'4+',W:3,Ld:'7+',OC:2}],
+   weapons:[
+     {name:'Vicious claws',range:'Melee',A:5,BS:'3+',S:6,AP:-2,D:1,kw:'—'},
+   ],
+   abilities:[
+     {name:'Wraith Form',desc:'4+ Invulnerable save. Can move through terrain and models.'},
+     {name:'Fly',desc:'Can move over terrain.'},
+   ],keywords:['Infantry','Fly','Canoptek','Necron']},
+
+  {id:'nec_monolith',faction:'nec',name:'Monolith',role:'Lord of War',pts:320,
+   stats:[{m:'Monolith',M:'6"',T:13,Sv:'2+',W:20,Ld:'7+',OC:8}],
+   weapons:[
+     {name:'Flux arc',range:'24"',A:3,BS:'3+',S:8,AP:-2,D:2,kw:'—'},
+     {name:'Particle whip',range:'36"',A:6,BS:'3+',S:10,AP:-3,D:'D3',kw:'Blast'},
+   ],
+   abilities:[
+     {name:'Eternity Gate',desc:'Once per turn, teleport a Necron Infantry unit within 3" to anywhere more than 9" from enemies.'},
+     {name:'Living Metal',desc:'Regains D3 lost wounds at the start of each Command phase.'},
+   ],keywords:['Vehicle','Titanic','Necron']},
+
+  // ══ T'AU EMPIRE ══
+  {id:'tau_shadowsun',faction:'tau',name:'Commander Shadowsun',role:'Character',pts:115,
+   stats:[{m:'Shadowsun',M:'10"',T:5,Sv:'3+',W:6,Ld:'7+',OC:1}],
+   weapons:[
+     {name:'Fléchette launcher',range:'18"',A:8,BS:'2+',S:4,AP:0,D:1,kw:'Sustained Hits 1'},
+     {name:'Fusion blasters',range:'12"',A:2,BS:'2+',S:9,AP:-4,D:'D6',kw:'Melta 2'},
+   ],
+   abilities:[
+     {name:'Supreme Commander',desc:'Friendly T\'au units within 12" can re-roll all Hit rolls.'},
+     {name:'Stealth Suit',desc:'The Lone Operative ability. Subtract 1 from ranged Hit rolls targeting this model.'},
+     {name:'For the Greater Good',desc:'When an enemy charges a friendly unit within 12", this model can fire Overwatch.'},
+   ],keywords:['Character','Monster','Battlesuit','T\'au Empire']},
+
+  {id:'tau_crisis',faction:'tau',name:'Crisis Battlesuits',role:'Elites',pts:100,
+   stats:[{m:'Crisis Shas\'ui',M:'10"',T:5,Sv:'3+',W:3,Ld:'7+',OC:2},{m:'Crisis Shas\'la',M:'10"',T:5,Sv:'3+',W:3,Ld:'7+',OC:2}],
+   weapons:[
+     {name:'Burst cannon',range:'18"',A:6,BS:'4+',S:5,AP:0,D:1,kw:'—'},
+     {name:'Fusion blaster',range:'12"',A:2,BS:'4+',S:9,AP:-4,D:'D6',kw:'Melta 2'},
+     {name:'Missile pod',range:'36"',A:2,BS:'4+',S:7,AP:-1,D:2,kw:'—'},
+   ],
+   abilities:[
+     {name:'Fly',desc:'Can move over terrain.'},
+     {name:'For the Greater Good',desc:'Can fire Overwatch at enemies charging nearby friendly units.'},
+   ],keywords:['Monster','Battlesuit','T\'au Empire']},
+
+  {id:'tau_strike_team',faction:'tau',name:'Strike Team',role:'Troops',pts:75,
+   stats:[{m:'Fire Warrior Shas\'ui',M:'6"',T:3,Sv:'4+',W:1,Ld:'8+',OC:2},{m:'Fire Warrior',M:'6"',T:3,Sv:'4+',W:1,Ld:'8+',OC:2}],
+   weapons:[
+     {name:'Pulse rifle',range:'30"',A:1,BS:'4+',S:5,AP:-1,D:1,kw:'Rapid Fire 1'},
+     {name:'Pulse pistol',range:'12"',A:1,BS:'4+',S:5,AP:-1,D:1,kw:'Pistol'},
+   ],
+   abilities:[
+     {name:'Objective Secured',desc:'Counts as controlling objectives even if outnumbered.'},
+     {name:'For the Greater Good',desc:'Can fire Overwatch at enemies charging nearby units.'},
+   ],keywords:['Infantry','Core','T\'au Empire']},
+
+  {id:'tau_riptide',faction:'tau',name:'Riptide Battlesuit',role:'Heavy Support',pts:200,
+   stats:[{m:'Riptide',M:'10"',T:9,Sv:'2+',W:12,Ld:'7+',OC:3}],
+   weapons:[
+     {name:'Ion accelerator',range:'72"',A:3,BS:'4+',S:10,AP:-3,D:'D6',kw:'Heavy, Blast'},
+     {name:'Smart missile system',range:'30"',A:4,BS:'4+',S:5,AP:0,D:1,kw:'Indirect Fire'},
+   ],
+   abilities:[
+     {name:'Fly',desc:'Can move over terrain.'},
+     {name:'Nova Reactor',desc:'Once per turn, suffer D3 mortal wounds to: gain +6" Move, +1 Attack, Blast weapons gain D3+3 shots.'},
+   ],keywords:['Monster','Battlesuit','T\'au Empire']},
+
+  // ══ AELDARI ══
+  {id:'aeld_eldrad',faction:'aeld',name:'Eldrad Ulthran',role:'Character',pts:110,
+   stats:[{m:'Eldrad',M:'7"',T:3,Sv:'6+',W:5,Ld:'5+',OC:1}],
+   weapons:[
+     {name:'Singing spear',range:'18"',A:1,BS:'2+',S:9,AP:-3,D:'D3',kw:'Psychic'},
+     {name:'Witch staff',range:'Melee',A:4,BS:'2+',S:4,AP:-1,D:2,kw:'Psychic'},
+   ],
+   abilities:[
+     {name:'Psyker',desc:'Manifests 3 Psychic powers per phase. Has the Deny the Witch ability.'},
+     {name:'Fate\'s Messenger',desc:'Once per game, Eldrad can cancel an enemy stratagem without spending CP.'},
+     {name:'Spirit of the Farseer',desc:'When Eldrad is destroyed, place a Wraithbone token. Friendly Psykers within 6" can use it once as a free Psychic power.'},
+   ],keywords:['Character','Infantry','Psyker','Aeldari']},
+
+  {id:'aeld_guardians',faction:'aeld',name:'Guardian Defenders',role:'Troops',pts:80,
+   stats:[{m:'Guardian Defender',M:'7"',T:3,Sv:'5+',W:1,Ld:'6+',OC:2}],
+   weapons:[
+     {name:'Shuriken catapult',range:'18"',A:2,BS:'3+',S:4,AP:-1,D:1,kw:'—'},
+     {name:'Bright lance',range:'36"',A:1,BS:'3+',S:12,AP:-3,D:'D6+3',kw:'Heavy'},
+     {name:'Starcannon',range:'36"',A:2,BS:'3+',S:8,AP:-3,D:2,kw:'—'},
+   ],
+   abilities:[
+     {name:'Objective Secured',desc:'Counts as controlling objectives even if outnumbered.'},
+     {name:'Defenders\' Blade',desc:'Can fire Overwatch on a 5+.'},
+   ],keywords:['Infantry','Core','Aeldari']},
+
+  {id:'aeld_rangers',faction:'aeld',name:'Rangers',role:'Troops',pts:85,
+   stats:[{m:'Ranger',M:'7"',T:3,Sv:'5+',W:1,Ld:'6+',OC:2}],
+   weapons:[
+     {name:'Ranger long rifle',range:'36"',A:1,BS:'3+',S:4,AP:-1,D:2,kw:'Heavy, Precision'},
+   ],
+   abilities:[
+     {name:'Cameleoline',desc:'Has the Stealth ability. Gains the benefit of Dense terrain wherever it stands.'},
+     {name:'Appear Unbidden',desc:'Can be set up more than 9" from enemies using Infiltrate.'},
+   ],keywords:['Infantry','Core','Aeldari']},
+
+  {id:'aeld_wraithlord',faction:'aeld',name:'Wraithlord',role:'Heavy Support',pts:120,
+   stats:[{m:'Wraithlord',M:'8"',T:8,Sv:'3+',W:10,Ld:'6+',OC:4}],
+   weapons:[
+     {name:'Ghostglaive',range:'Melee',A:5,BS:'3+',S:10,AP:-3,D:3,kw:'—'},
+     {name:'Bright lance',range:'36"',A:1,BS:'3+',S:12,AP:-3,D:'D6+3',kw:'Heavy'},
+     {name:'Shuriken cannon',range:'24"',A:3,BS:'3+',S:6,AP:-1,D:1,kw:'—'},
+   ],
+   abilities:[
+     {name:'Wraithsight',desc:'At the start of the Command phase, if not within 9" of a Spiritseer or Farseer, subtract 1 from Hit rolls.'},
+   ],keywords:['Monster','Aeldari']},
+
+  {id:'aeld_dire_avengers',faction:'aeld',name:'Dire Avengers',role:'Elites',pts:90,
+   stats:[{m:'Dire Avenger Exarch',M:'7"',T:3,Sv:'4+',W:2,Ld:'6+',OC:2},{m:'Dire Avenger',M:'7"',T:3,Sv:'4+',W:1,Ld:'6+',OC:2}],
+   weapons:[
+     {name:'Avenger shuriken catapult',range:'18"',A:3,BS:'3+',S:4,AP:-1,D:1,kw:'—'},
+   ],
+   abilities:[
+     {name:'Martial Expertise',desc:'At the end of the Fight phase, all attacks made by this unit are counted against the enemy\'s armour saves; they ignore cover.'},
+   ],keywords:['Infantry','Core','Aspect Warrior','Aeldari']},
+
+  // ══ ADEPTA SORORITAS ══
+  {id:'sos_canoness',faction:'sos',name:'Canoness',role:'Character',pts:65,
+   stats:[{m:'Canoness',M:'6"',T:3,Sv:'3+',W:4,Ld:'5+',OC:1}],
+   weapons:[
+     {name:'Power sword',range:'Melee',A:4,BS:'2+',S:4,AP:-2,D:1,kw:'—'},
+     {name:'Plasma pistol',range:'12"',A:1,BS:'2+',S:8,AP:-3,D:2,kw:'Pistol, Hazardous'},
+   ],
+   abilities:[
+     {name:'Shield of Faith',desc:'5+ Invulnerable save. Acts of Faith auto-succeed on a 5+.'},
+     {name:'Lead the Righteous (Aura)',desc:'Friendly Adepta Sororitas Core units within 6" re-roll Hit rolls of 1.'},
+   ],keywords:['Character','Infantry','Adepta Sororitas']},
+
+  {id:'sos_battle_sisters',faction:'sos',name:'Battle Sisters Squad',role:'Troops',pts:90,
+   stats:[{m:'Sister Superior',M:'6"',T:3,Sv:'3+',W:2,Ld:'6+',OC:2},{m:'Battle Sister',M:'6"',T:3,Sv:'3+',W:1,Ld:'6+',OC:2}],
+   weapons:[
+     {name:'Boltgun',range:'24"',A:2,BS:'3+',S:4,AP:0,D:1,kw:'Rapid Fire 1'},
+     {name:'Flamer',range:'12"',A:'D6',BS:'N/A',S:4,AP:0,D:1,kw:'Torrent'},
+     {name:'Meltagun',range:'12"',A:1,BS:'3+',S:9,AP:-4,D:'D6',kw:'Melta 2'},
+   ],
+   abilities:[
+     {name:'Shield of Faith',desc:'5+ Invulnerable save.'},
+     {name:'Objective Secured',desc:'Counts as controlling objectives even if outnumbered.'},
+   ],keywords:['Infantry','Core','Adepta Sororitas']},
+
+  {id:'sos_seraphim',faction:'sos',name:'Seraphim',role:'Fast Attack',pts:90,
+   stats:[{m:'Seraphim Superior',M:'12"',T:3,Sv:'3+',W:2,Ld:'6+',OC:2},{m:'Seraphim',M:'12"',T:3,Sv:'3+',W:1,Ld:'6+',OC:2}],
+   weapons:[
+     {name:'Bolt pistol',range:'12"',A:1,BS:'3+',S:4,AP:0,D:1,kw:'Pistol'},
+     {name:'Inferno pistol',range:'6"',A:1,BS:'3+',S:8,AP:-4,D:'D3',kw:'Pistol, Melta 2'},
+   ],
+   abilities:[
+     {name:'Fly',desc:'Can move over terrain.'},
+     {name:'Burst of Speed',desc:'Can Advance and still charge.'},
+   ],keywords:['Infantry','Core','Fly','Adepta Sororitas']},
+
+  // ══ ADEPTUS MECHANICUS ══
+  {id:'ad_skitarii_rangers',faction:'ad',name:'Skitarii Rangers',role:'Troops',pts:75,
+   stats:[{m:'Ranger Alpha',M:'6"',T:3,Sv:'4+',W:2,Ld:'7+',OC:2},{m:'Skitarii Ranger',M:'6"',T:3,Sv:'4+',W:1,Ld:'7+',OC:2}],
+   weapons:[
+     {name:'Galvanic rifle',range:'30"',A:2,BS:'3+',S:4,AP:0,D:2,kw:'Heavy'},
+     {name:'Arc rifle',range:'30"',A:1,BS:'3+',S:6,AP:-1,D:2,kw:'Heavy, Anti-Vehicle 4+'},
+   ],
+   abilities:[
+     {name:'Doctrina Imperatives',desc:'Gain one of: +6" range, or -1 to wound against non-Vehicles.'},
+     {name:'Objective Secured',desc:'Counts as controlling objectives even if outnumbered.'},
+   ],keywords:['Infantry','Core','Skitarii','Adeptus Mechanicus']},
+
+  {id:'ad_kastelan_robots',faction:'ad',name:'Kastelan Robots',role:'Heavy Support',pts:195,
+   stats:[{m:'Kastelan Robot',M:'8"',T:8,Sv:'3+',W:6,Ld:'7+',OC:2}],
+   weapons:[
+     {name:'Heavy phosphor blaster',range:'36"',A:3,BS:'3+',S:7,AP:-1,D:2,kw:'Lethal Hits'},
+     {name:'Kastelan fist',range:'Melee',A:4,BS:'4+',S:10,AP:-2,D:3,kw:'—'},
+   ],
+   abilities:[
+     {name:'Repulsor Grid',desc:'4+ Invulnerable save vs ranged attacks.'},
+     {name:'Battle Protocol',desc:'Select one: Aegis Protocol (5++ inv save), Conqueror Protocol (+1 Attack), or Protector Protocol (heavy weapons, no move penalty).'},
+   ],keywords:['Monster','Adeptus Mechanicus']},
+
+  // ══ ASTRA MILITARUM ══
+  {id:'am_company_commander',faction:'am',name:'Company Commander',role:'Character',pts:35,
+   stats:[{m:'Company Commander',M:'6"',T:3,Sv:'5+',W:3,Ld:'7+',OC:1}],
+   weapons:[
+     {name:'Laspistol',range:'12"',A:1,BS:'4+',S:3,AP:0,D:1,kw:'Pistol'},
+     {name:'Chainsword',range:'Melee',A:3,BS:'4+',S:3,AP:-1,D:1,kw:'—'},
+   ],
+   abilities:[
+     {name:'Voice of Command',desc:'Issue one Order per Command phase to a friendly Astra Militarum Infantry unit within 6".'},
+     {name:'Tactical Genius',desc:'Once per battle, use one Stratagem for 0 CP.'},
+   ],keywords:['Character','Infantry','Astra Militarum']},
+
+  {id:'am_infantry_squad',faction:'am',name:'Infantry Squad',role:'Troops',pts:55,
+   stats:[{m:'Sergeant',M:'6"',T:3,Sv:'5+',W:1,Ld:'7+',OC:2},{m:'Guardsman',M:'6"',T:3,Sv:'5+',W:1,Ld:'7+',OC:2}],
+   weapons:[
+     {name:'Lasgun',range:'24"',A:1,BS:'4+',S:3,AP:0,D:1,kw:'Rapid Fire 1'},
+     {name:'Laspistol',range:'12"',A:1,BS:'4+',S:3,AP:0,D:1,kw:'Pistol'},
+     {name:'Plasma gun',range:'24"',A:1,BS:'3+',S:7,AP:-2,D:2,kw:'Rapid Fire 1'},
+   ],
+   abilities:[
+     {name:'Objective Secured',desc:'Counts as controlling objectives even if outnumbered.'},
+     {name:'Combined Arms',desc:'While within 6" of a friendly Officer, this unit re-rolls Morale tests.'},
+   ],keywords:['Infantry','Core','Astra Militarum']},
+
+  {id:'am_leman_russ',faction:'am',name:'Leman Russ Battle Tank',role:'Heavy Support',pts:165,
+   stats:[{m:'Leman Russ',M:'10"',T:11,Sv:'2+',W:13,Ld:'7+',OC:3}],
+   weapons:[
+     {name:'Battle cannon',range:'72"',A:'D6',BS:'4+',S:10,AP:-1,D:'D3+3',kw:'Blast'},
+     {name:'Heavy bolter',range:'36"',A:3,BS:'4+',S:5,AP:-1,D:2,kw:'Sustained Hits 1'},
+     {name:'Lascannon',range:'48"',A:1,BS:'4+',S:12,AP:-3,D:'D6+1',kw:'Heavy'},
+   ],
+   abilities:[
+     {name:'Grinding Advance',desc:'Can move and fire the Battle Cannon without penalty.'},
+     {name:'Steel Behemoth',desc:'Cannot be moved by enemy abilities.'},
+   ],keywords:['Vehicle','Adeptus Mechanicus','Astra Militarum']},
+
+  // ══ GREY KNIGHTS ══
+  {id:'gk_grand_master',faction:'gk',name:'Grand Master in Nemesis Dreadknight',role:'Character',pts:215,
+   stats:[{m:'Grand Master',M:'8"',T:8,Sv:'2+',W:12,Ld:'5+',OC:3}],
+   weapons:[
+     {name:'Nemesis greatsword',range:'Melee',A:8,BS:'2+',S:10,AP:-3,D:'D3',kw:'Psychic, Devastating Wounds'},
+     {name:'Heavy psycannon',range:'30"',A:6,BS:'2+',S:8,AP:-1,D:2,kw:'Psychic'},
+   ],
+   abilities:[
+     {name:'Psyker',desc:'Manifests 2 Psychic powers per phase.'},
+     {name:'Lord of Titan',desc:'Grey Knights units within 6" can re-roll Psychic tests.'},
+   ],keywords:['Character','Walker','Psyker','Grey Knights']},
+
+  {id:'gk_gkss',faction:'gk',name:'Grey Knights Strike Squad',role:'Troops',pts:140,
+   stats:[{m:'Justicar',M:'6"',T:4,Sv:'3+',W:2,Ld:'6+',OC:2},{m:'Grey Knight',M:'6"',T:4,Sv:'3+',W:2,Ld:'6+',OC:2}],
+   weapons:[
+     {name:'Nemesis force sword',range:'Melee',A:4,BS:'3+',S:6,AP:-2,D:'D3',kw:'Psychic'},
+     {name:'Storm bolter',range:'24"',A:2,BS:'3+',S:4,AP:0,D:1,kw:'Rapid Fire 2'},
+     {name:'Psilencer',range:'24"',A:6,BS:'3+',S:5,AP:0,D:2,kw:'Psychic'},
+   ],
+   abilities:[
+     {name:'Teleport Strike',desc:'Can deep strike more than 9" from enemies.'},
+     {name:'Psychic Channelling',desc:'Psykers in this unit can manifest one additional power per phase.'},
+   ],keywords:['Infantry','Core','Psyker','Grey Knights']},
+
+  // ══ CHAOS DAEMONS ══
+  {id:'cd_bloodthirster',faction:'cd',name:'Bloodthirster of Insensate Rage',role:'Lord of War',pts:300,
+   stats:[{m:'Bloodthirster',M:'12"',T:9,Sv:'4+',W:20,Ld:'6+',OC:5}],
+   weapons:[
+     {name:'Axe of Khorne',range:'Melee',A:10,BS:'2+',S:16,AP:-4,D:4,kw:'Devastating Wounds'},
+   ],
+   abilities:[
+     {name:'Fly',desc:'Can move over terrain.'},
+     {name:'Daemonic Terror',desc:'Enemy units within 6" subtract 1 from Morale and Leadership tests.'},
+     {name:'Rage Incarnate',desc:'The Bloodthirster can charge even if it Advanced.'},
+     {name:'4+ Invulnerable Save',desc:'This model has a 4+ Invulnerable save.'},
+   ],keywords:['Monster','Daemon','Khorne']},
+
+  {id:'cd_pink_horrors',faction:'cd',name:'Pink Horrors of Tzeentch',role:'Troops',pts:70,
+   stats:[{m:'Pink Horror',M:'6"',T:3,Sv:'6+',W:1,Ld:'7+',OC:2}],
+   weapons:[
+     {name:'Flickering flames',range:'18"',A:2,BS:'3+',S:4,AP:-2,D:1,kw:'Psychic'},
+   ],
+   abilities:[
+     {name:'Split',desc:'When a Pink Horror model is destroyed, place two Blue Horrors (1 wound, no weapons) in its place.'},
+     {name:'Psychic Offspring',desc:'When all Blue Horrors are removed, place one Brimstone Horror per pair.'},
+   ],keywords:['Infantry','Core','Daemon','Tzeentch']},
+
+  {id:'cd_plaguebearers',faction:'cd',name:'Plaguebearers',role:'Troops',pts:75,
+   stats:[{m:'Plagueridden',M:'5"',T:4,Sv:'7+',W:1,Ld:'7+',OC:2},{m:'Plaguebearer',M:'5"',T:4,Sv:'7+',W:1,Ld:'7+',OC:2}],
+   weapons:[
+     {name:'Plaguesword',range:'Melee',A:1,BS:'4+',S:4,AP:-1,D:1,kw:'Plague Weapon, Lethal Hits'},
+   ],
+   abilities:[
+     {name:'Disgustingly Resilient',desc:'5+ Feel No Pain save.'},
+     {name:'Cloud of Flies',desc:'Ranged attacks targeting this unit subtract 1 from Hit rolls.'},
+   ],keywords:['Infantry','Core','Daemon','Nurgle']},
+
+  {id:'cd_daemonettes',faction:'cd',name:'Daemonettes',role:'Troops',pts:70,
+   stats:[{m:'Alluress',M:'8"',T:3,Sv:'6+',W:1,Ld:'7+',OC:2},{m:'Daemonette',M:'8"',T:3,Sv:'6+',W:1,Ld:'7+',OC:2}],
+   weapons:[
+     {name:'Piercing claws',range:'Melee',A:2,BS:'3+',S:4,AP:-2,D:1,kw:'—'},
+   ],
+   abilities:[
+     {name:'Swift Advance',desc:'Can Advance and Charge in the same turn.'},
+     {name:'Warp Dance',desc:'After fighting, can consolidate 6".'},
+   ],keywords:['Infantry','Core','Daemon','Slaanesh']},
+
+  // ══ LEAGUES OF VOTANN ══
+  {id:'lov_kin_warriors',faction:'lov',name:'Hearthkyn Warriors',role:'Troops',pts:100,
+   stats:[{m:'Theyn',M:'5"',T:4,Sv:'3+',W:2,Ld:'6+',OC:2},{m:'Hearthkyn',M:'5"',T:4,Sv:'3+',W:1,Ld:'6+',OC:2}],
+   weapons:[
+     {name:'Autoch-pattern bolter',range:'24"',A:2,BS:'3+',S:4,AP:-1,D:1,kw:'Rapid Fire 1'},
+     {name:'Ion beamer',range:'24"',A:1,BS:'3+',S:6,AP:-2,D:2,kw:'Rapid Fire 1'},
+   ],
+   abilities:[
+     {name:'Objective Secured',desc:'Counts as controlling objectives even if outnumbered.'},
+     {name:'Combat Focus',desc:'+1 to Hit in the phase after a Judgement token is claimed.'},
+   ],keywords:['Infantry','Core','Leagues of Votann']},
+
+  {id:'lov_hernkyn_pioneers',faction:'lov',name:'Hernkyn Pioneers',role:'Fast Attack',pts:100,
+   stats:[{m:'Hernkyn Pioneer',M:'10"',T:5,Sv:'3+',W:2,Ld:'7+',OC:2}],
+   weapons:[
+     {name:'Volkite charger',range:'15"',A:2,BS:'3+',S:5,AP:0,D:1,kw:'Devastating Wounds'},
+     {name:'Rampart claw',range:'Melee',A:3,BS:'3+',S:5,AP:-1,D:1,kw:'—'},
+   ],
+   abilities:[
+     {name:'Scout',desc:'Before the battle begins, can move 6".'},
+     {name:'Grudge Bearer',desc:'Add 1 to Hit rolls against units with Judgement tokens.'},
+   ],keywords:['Mounted','Core','Leagues of Votann']},
+
+  // ══ IMPERIAL KNIGHTS ══
+  {id:'ik_knight_errant',faction:'ik',name:'Knight Errant',role:'Lord of War',pts:335,
+   stats:[{m:'Knight Errant',M:'12"',T:11,Sv:'3+',W:22,Ld:'6+',OC:5}],
+   weapons:[
+     {name:'Thermal cannon',range:'36"',A:'D6',BS:'3+',S:14,AP:-4,D:'D6+6',kw:'Blast, Melta 6'},
+     {name:'Reaper chainsword',range:'Melee',A:6,BS:'3+',S:16,AP:-3,D:'D6+6',kw:'—'},
+     {name:'Thunderstrike gauntlet',range:'Melee',A:3,BS:'4+',S:20,AP:-3,D:'D6+9',kw:'—'},
+   ],
+   abilities:[
+     {name:'Ion Shield',desc:'4+ Invulnerable save vs ranged attacks.'},
+     {name:'Towering Behemoth',desc:'Attacks against this unit ignore the bonus from Light Cover. This unit can move over Infantry models when moving.'},
+     {name:'Titanic Feet',desc:'Each time this model makes a Normal move or a charge move, each enemy Infantry unit it moves over suffers D3 mortal wounds.'},
+   ],keywords:['Vehicle','Titanic','Imperial Knights']},
+
+  {id:'ik_knight_castellan',faction:'ik',name:'Knight Castellan',role:'Lord of War',pts:400,
+   stats:[{m:'Knight Castellan',M:'10"',T:12,Sv:'3+',W:24,Ld:'6+',OC:5}],
+   weapons:[
+     {name:'Volcano lance',range:'80"',A:3,BS:'3+',S:20,AP:-6,D:'D6+10',kw:'Heavy'},
+     {name:'Plasma decimator',range:'48"',A:'2D6',BS:'3+',S:7,AP:-2,D:1,kw:'Blast, Hazardous'},
+     {name:'Shieldbreaker missiles',range:'60"',A:2,BS:'3+',S:12,AP:-4,D:'D6+4',kw:'Anti-Monster 2+, Anti-Vehicle 2+'},
+   ],
+   abilities:[
+     {name:'Ion Shield',desc:'4+ Invulnerable save vs ranged attacks.'},
+     {name:'Fortress of Firepower',desc:'Can fire all weapons at separate targets.'},
+   ],keywords:['Vehicle','Titanic','Imperial Knights']},
+
+  // ══ GENESTEALER CULTS ══
+  {id:'gsc_patriarch',faction:'gsc',name:'Patriarch',role:'Character',pts:130,
+   stats:[{m:'Patriarch',M:'8"',T:5,Sv:'4+',W:8,Ld:'6+',OC:2}],
+   weapons:[
+     {name:'Monstrous rending claws',range:'Melee',A:7,BS:'3+',S:7,AP:-3,D:2,kw:'—'},
+   ],
+   abilities:[
+     {name:'Hypnotic Gaze',desc:'Once per Fight phase, select one enemy model within 6". It fights last this phase.'},
+     {name:'Preternatural Speed',desc:'Can Advance and still charge.'},
+     {name:'4+ Invulnerable Save',desc:'This model has a 4+ Invulnerable save.'},
+   ],keywords:['Character','Monster','Psyker','Genestealer Cults']},
+
+  {id:'gsc_hybrid_neophytes',faction:'gsc',name:'Hybrid Neophytes',role:'Troops',pts:60,
+   stats:[{m:'Neophyte Hybrid Leader',M:'6"',T:3,Sv:'5+',W:1,Ld:'7+',OC:2},{m:'Hybrid Neophyte',M:'6"',T:3,Sv:'5+',W:1,Ld:'7+',OC:2}],
+   weapons:[
+     {name:'Autostub',range:'12"',A:1,BS:'4+',S:4,AP:0,D:1,kw:'Pistol'},
+     {name:'Shotgun',range:'12"',A:2,BS:'4+',S:3,AP:0,D:1,kw:'Assault'},
+     {name:'Seismic cannon',range:'18"',A:'D6',BS:'4+',S:6,AP:-1,D:1,kw:'Blast'},
+   ],
+   abilities:[
+     {name:'Objective Secured',desc:'Counts as controlling objectives even if outnumbered.'},
+     {name:'Cult Ambush',desc:'Can be set up in Ambush at the start of the battle.'},
+   ],keywords:['Infantry','Core','Genestealer Cults']},
+];
+
+// ═══════════════════════════════════════════════════════════════
+// DATABASE
+// ═══════════════════════════════════════════════════════════════
+let db;
+function openDB(){
+  return new Promise((ok,fail)=>{
+    const r=indexedDB.open('wh40k_v2',2);
+    r.onupgradeneeded=e=>{
+      const d=e.target.result;
+      ['units','factions','detachments','meta','coreStratagems'].forEach(s=>{
+        if(!d.objectStoreNames.contains(s)) d.createObjectStore(s,{keyPath:s==='meta'?'key':'id'});
+      });
+    };
+    r.onsuccess=e=>{db=e.target.result;ok();};
+    r.onerror=fail;
+  });
+}
+const tx=(s,m)=>db.transaction(s,m).objectStore(s);
+function dbPutAll(store, arr) {
+  return Promise.all(arr.map(x => new Promise((ok) => {
+    const keyField = store === 'meta' ? 'key' : 'id';
+
+    if (!x || x[keyField] == null || x[keyField] === '') {
+      console.warn(`Skipped invalid ${store}:`, x);
+      return ok();
+    }
+
+    const r = tx(store, 'readwrite').put(x);
+    r.onsuccess = () => ok();
+    r.onerror = () => {
+      console.warn(`Failed to store ${store}:`, x);
+      ok();
+    };
+  })));
+}function dbGetAll(store){return new Promise((ok,f)=>{const r=tx(store,'readonly').getAll();r.onsuccess=()=>ok(r.result);r.onerror=f;});}
+function dbGet(store,key){return new Promise((ok,f)=>{const r=tx(store,'readonly').get(key);r.onsuccess=()=>ok(r.result);r.onerror=f;});}
+function dbPut(store,obj){return new Promise((ok,f)=>{const r=tx(store,'readwrite').put(obj);r.onsuccess=ok;r.onerror=f;});}
+
+// ═══════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════
+let units=[], factions=[], detachments=[], coreStratagems=[], favourites=new Set();
+let activeScreen='units', activeFaction='all', unitSearch='', detFaction='all', detSearch='';
+let expandedDets=new Set();
+
+// ═══════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════
+async function init(){
+  await openDB();
+  const dbUnits=await dbGetAll('units');
+  const dbFavs=await dbGet('meta','favourites');
+  if(dbUnits.length>0){
+    units=dbUnits;
+    factions=await dbGetAll('factions')||FACTIONS;
+    detachments=await dbGetAll('detachments')||DETACHMENTS;
+    coreStratagems=await dbGetAll('coreStratagems')||[];
+  }
+  else { units=UNITS; factions=FACTIONS; detachments=DETACHMENTS; coreStratagems=[]; await seed(); }
+  if(dbFavs) favourites=new Set(dbFavs.value);
+  const meta=await dbGet('meta','lastSync');
+  updateSyncNotice(meta?.value);
+  updateStatus();
+  renderFactionPills();
+  renderDetFactionPills();
+  renderUnits();
+  renderDets();
+  renderFavs();
+  window.addEventListener('online',updateStatus);
+  window.addEventListener('offline',updateStatus);
+  if(navigator.onLine){
+    const lt=await dbGet('meta','lastSyncTime');
+    const lastSyncVal=(await dbGet('meta','lastSync'))?.value||'';
+    const neverFetchedWaha=!lastSyncVal.includes('Wahapedia');
+    if(neverFetchedWaha||!lt||(Date.now()-lt.value)>6*3600000) doSync();
+  }
+  setupSheetGestures();
+}
+
+async function seed(){
+  await dbPutAll('units',UNITS);
+  await dbPutAll('factions',FACTIONS);
+  await dbPutAll('detachments',DETACHMENTS);
+  await dbPut('meta',{key:'lastSync',value:'Built-in data'});
+}
+
+function updateSyncNotice(val){
+  const el=document.getElementById('sync-notice');
+  el.textContent=val?`Last synced: ${val}`:'';
+  el.style.display=val?'block':'none';
+}
+
+function updateStatus(){
+  const on=navigator.onLine;
+  ['dot','dot2'].forEach(id=>{
+    const d=document.getElementById(id);
+    if(d){d.className='dot'+(on?'':' off');}
+  });
+  ['status-lbl','status-lbl2'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.textContent=on?'ONLINE':'OFFLINE';
+  });
+}
+
+async function triggerSync(){
+  if(!navigator.onLine){ updateSyncNotice('No connection — cannot sync.'); return; }
+  const btn = document.querySelector('.icon-btn[onclick="triggerSync()"]');
+  if(btn){ btn.style.opacity='0.4'; btn.style.pointerEvents='none'; }
+  await doSync();
+  if(btn){ btn.style.opacity=''; btn.style.pointerEvents=''; }
+}
+
+// ─── WAHAPEDIA CSV FETCHER ───────────────────────────────────────────
+// Wahapedia provides public CSV exports. We use corsproxy.io to bypass CORS.
+// ─── REAL WAHAPEDIA CSV FETCHER ─────────────────────────────────────
+// All filenames verified from the official Wahapedia Export Data Specs xlsx
+const PROXY = 'https://corsproxy.io/?url=';
+const BASE  = 'https://wahapedia.ru/wh40k10ed/';
+
+function fetchCSV(url) {
+  return fetch(PROXY + encodeURIComponent(url), {signal: AbortSignal.timeout(15000)})
+    .then(r => { if (!r.ok) throw new Error(r.status); return r.text(); });
+}
+
+function parseCSV(text) {
+  if (!text || !text.trim()) return [];
+  const lines = text.replace(/\r/g, '').split('\n').filter(l => l.trim());
+  if (lines.length < 2) return [];
+  const headers = lines[0].split('|').map(h => h.replace(/^\uFEFF/, '').trim());
+  return lines.slice(1).map(line => {
+    const vals = line.split('|');
+    const obj = {};
+    headers.forEach((h, i) => { obj[h] = (vals[i] || '').trim(); });
+    return obj;
+  }).filter(o => Object.values(o).some(v => v));
+}
+
+function stripHTML(html) {
+  return (html || '')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>')
+    .replace(/&quot;/g,'"').replace(/&#39;/g,"'")
+    .replace(/\s+/g,' ').trim();
+}
+
+async function doSync() {
+  ['dot','dot2'].forEach(id=>{const d=document.getElementById(id);if(d)d.className='dot sync';});
+  updateSyncNotice('Syncing from Wahapedia…');
+
+  try {
+    // Fetch all verified CSVs in parallel — failures return null and are handled gracefully
+    const urls = {
+      factions:    BASE + 'Factions.csv',
+      sources:     BASE + 'Source.csv',               // source docs — used to detect Legends units
+      sheets:      BASE + 'Datasheets.csv',
+      models:      BASE + 'Datasheets_models.csv',         // stats: M/T/Sv/W/Ld/OC
+      wargear:     BASE + 'Datasheets_wargear.csv',        // weapons: range/A/BS_WS/S/AP/D
+      abilities:   BASE + 'Datasheets_abilities.csv',      // unit abilities
+      keywords:    BASE + 'Datasheets_keywords.csv',       // keywords
+      costs:       BASE + 'Datasheets_models_cost.csv',    // points
+      options:     BASE + 'Datasheets_options.csv',        // wargear options text
+      sources:     BASE + 'Source.csv',                    // source types — used to detect Legends
+      abilityDefs: BASE + 'Abilities.csv',                 // global ability definitions (Deadly Demise, FNP etc.)
+      stratagems:  BASE + 'Stratagems.csv',                // all stratagems
+      detachments: BASE + 'Detachments.csv',               // detachment list
+      detAbils:    BASE + 'Detachment_abilities.csv',      // detachment rules
+      leaders:     BASE + 'Datasheets_leader.csv',         // leader ↔ bodyguard links
+    };
+
+    const keys = Object.keys(urls);
+    const results = await Promise.all(
+      Object.values(urls).map(u => fetchCSV(u).catch(() => null))
+    );
+    const csv = {};
+    keys.forEach((k, i) => { csv[k] = results[i]; });
+
+    if (!csv.sheets || !csv.models) throw new Error('Core Wahapedia files unavailable');
+
+    const rawFactions   = parseCSV(csv.factions);
+    const rawSources    = parseCSV(csv.sources);
+    const rawSheets     = parseCSV(csv.sheets);
+
+    // Build set of source IDs that are Legends documents
+    // Pattern 1: name starts with "Legends:" e.g. "Legends: Tyranids"
+    // Pattern 2: name contains "(Warhammer Legends)" e.g. "Chaos Space Marines (Warhammer Legends)"
+    const legendsSourceIds = new Set(
+      rawSources
+        .filter(s => s.name && (
+          s.name.startsWith('Legends:') ||
+          s.name.includes('Warhammer Legends')
+        ))
+        .map(s => s.id)
+    );
+    const rawModels     = parseCSV(csv.models);
+    const rawWargear    = parseCSV(csv.wargear);
+    const rawAbilities  = parseCSV(csv.abilities);
+    const rawKeywords   = parseCSV(csv.keywords);
+    const rawCosts      = parseCSV(csv.costs);
+    const rawOptions    = parseCSV(csv.options);
+    const rawSources    = parseCSV(csv.sources);
+    const rawStratagems = parseCSV(csv.stratagems);
+
+    // Build a Set of source IDs that are Legends sources
+    // Source.csv: id | name | type — Legends sources have "Legends" in name or type
+    const legendSourceIds = new Set(
+      rawSources
+        .filter(s => (s.name||'').toLowerCase().includes('legends') || (s.type||'').toLowerCase().includes('legends'))
+        .map(s => s.id)
+    );
+    console.log(`Legends sources: ${legendSourceIds.size}`, [...legendSourceIds]);
+    const rawDetachments= parseCSV(csv.detachments);
+    const rawDetAbils   = parseCSV(csv.detAbils);
+    const rawLeaders    = parseCSV(csv.leaders);
+
+    // Build sheet name lookup
+    const sheetNameById = {};
+    rawSheets.forEach(s => { if(s.id && s.name) sheetNameById[s.id] = s.name; });
+
+    // leader_id → names of units it can lead (attached_datasheet_id = bodyguard unit)
+    const canLeadMap = {};    // leader datasheet_id → [bodyguard names]
+    const attachedByMap = {}; // bodyguard datasheet_id → [leader names]
+    rawLeaders.forEach(row => {
+      const lid = row.datasheet_id;
+      const bid = row.attached_datasheet_id;
+      if(!lid || !bid) return;
+      if(!canLeadMap[lid]) canLeadMap[lid] = [];
+      if(!attachedByMap[bid]) attachedByMap[bid] = [];
+      const bName = sheetNameById[bid];
+      const lName = sheetNameById[lid];
+      if(bName && !canLeadMap[lid].includes(bName)) canLeadMap[lid].push(bName);
+      if(lName && !attachedByMap[bid].includes(lName)) attachedByMap[bid].push(lName);
+    });
+
+    // Build global ability definitions lookup (id → {name, description})
+    const rawAbilityDefs = parseCSV(csv.abilityDefs);
+    const abilityDefMap = {};
+    rawAbilityDefs.forEach(a => { if(a.id) abilityDefMap[a.id] = a; });
+
+    // Lookup maps keyed by datasheet_id
+    const modelsBySheet   = groupBy(rawModels,   'datasheet_id');
+    const wargearBySheet  = groupBy(rawWargear,  'datasheet_id');
+    const abilitBySheet   = groupBy(rawAbilities,'datasheet_id');
+    const kwBySheet       = groupBy(rawKeywords, 'datasheet_id');
+    const optsBySheet     = groupBy(rawOptions,  'datasheet_id');
+
+    // Points: Datasheets_models_cost has datasheet_id, line, description, cost
+    const costBySheet = {};
+    rawCosts.forEach(c => {
+      const id = c.datasheet_id;
+      const v = +c.cost;
+      if (!isNaN(v) && v > 0) {
+        if (!costBySheet[id] || v < costBySheet[id]) costBySheet[id] = v;
+      }
+    });
+
+    // ── Convert factions ──
+    const convertedFactions = rawFactions
+      .filter(f => f.id && f.name)
+      .map(f => ({ id: f.id, name: f.name, color: factionColor(f.id, f.name) }));
+
+    // ── Convert units ──
+    const convertedUnits = rawSheets
+      .filter(s => s.id && s.name && s.virtual !== 'true')
+      .map(s => {
+        const models = (modelsBySheet[s.id] || []).map(m => ({
+          m:  m.name || s.name,
+          M:  m.M  || '—',
+          T:  m.T  || '—',
+          Sv: m.Sv || '—',
+          W:  m.W  || '—',
+          Ld: m.Ld || '—',
+          OC: m.OC || '—',
+          inv: m.inv_sv && m.inv_sv !== '-' ? m.inv_sv + '+' : null,
+          inv_descr: m.inv_sv_descr ? stripHTML(m.inv_sv_descr) : null,
+        }));
+
+        // Datasheets_wargear fields: datasheet_id, line, in_wargear, dice, name,
+        //   description, range, type, A, BS_WS, S, AP, D
+        const weapons = (wargearBySheet[s.id] || [])
+          .filter(w => w.name && w.range)   // skip blank wargear description rows
+          .map(w => ({
+            name:  w.name,
+            range: w.range || '—',
+            A:     w.A    || '—',
+            BS:    w.BS_WS|| '—',
+            S:     w.S    || '—',
+            AP:    w.AP   || '—',
+            D:     w.D    || '—',
+            kw:    stripHTML(w.description) || '—',
+          }));
+
+        // Separate core/faction abilities (with ability_id) from datasheet abilities
+        const allAbilRows = abilitBySheet[s.id] || [];
+
+        // Core abilities: rows with ability_id → look up real name + append parameter
+        const coreAbilities = allAbilRows
+          .filter(a => a.ability_id && abilityDefMap[a.ability_id])
+          .map(a => {
+            const def = abilityDefMap[a.ability_id];
+            const param = (a.parameter || '').trim();
+            return {
+              name: stripHTML(def.name) + (param ? ' ' + param : ''),
+              desc: stripHTML(def.description),
+              type: a.type || 'Core',
+            };
+          })
+          // Deduplicate by name
+          .filter((a, i, arr) => arr.findIndex(x => x.name === a.name) === i);
+
+        // Datasheet abilities: rows without ability_id that have name+description
+        const abilities = allAbilRows
+          .filter(a => !a.ability_id && a.name && a.description && a.type !== 'Core' && a.type !== 'Faction')
+          .map(a => ({
+            name: stripHTML(a.name),
+            desc: stripHTML(a.description),
+          }));
+
+        // Wargear abilities: type === 'Wargear' or 'Wargear profile'
+        const wargearAbilities = allAbilRows
+          .filter(a => !a.ability_id && a.name && a.description && (a.type === 'Wargear' || a.type === 'Wargear profile'))
+          .map(a => ({
+            name: stripHTML(a.name),
+            desc: stripHTML(a.description),
+          }));
+
+        const keywords = (kwBySheet[s.id] || [])
+          .map(k => k.keyword).filter(Boolean);
+
+        // Wargear options: Datasheets_options has datasheet_id, line, button, description
+        const wargearOptions = (optsBySheet[s.id] || [])
+          .filter(o => o.description && o.description.trim())
+          .map(o => stripHTML(o.description));
+
+        return {
+          id:       s.id,
+          faction:  s.faction_id,
+          name:     s.name,
+          role:     s.role || 'Unknown',
+          pts:      costBySheet[s.id] || 0,
+          legend:   legendsSourceIds.has(s.source_id),
+          transport:   s.transport ? stripHTML(s.transport) : null,
+          damagedW:    s.damaged_w   ? s.damaged_w.trim()   : null,
+          damagedDesc: s.damaged_description ? stripHTML(s.damaged_description) : null,
+          canLead:     canLeadMap[s.id]    || [],
+          attachedBy:  attachedByMap[s.id] || [],
+          stats:    models,
+          weapons,
+          coreAbilities,
+          abilities,
+          wargearAbilities,
+          wargearOptions,
+          keywords,
+        };
+      })
+      .filter(u => u.stats.length > 0);
+
+    // ── Convert detachments + stratagems ──
+    // Core stratagems: faction_id empty, type contains "Core", AND no detachment_id
+    const TYPE_KWS = ['INFANTRY','MOUNTED','VEHICLE','MONSTER','CHARACTER',
+      'WALKER','TITANIC','BEAST','CAVALRY','BATTLELINE','TRANSPORT','PSYKER'];
+
+    // Parse raw HTML description to extract TARGET requirements before stripping
+    function parseStratTarget(rawDesc) {
+      if (!rawDesc) return { targetKws: [], excludeKws: [] };
+      const upper = rawDesc.toUpperCase();
+
+      // Find <b>TARGET:</b> section (raw HTML format from Wahapedia)
+      const tStart = upper.search(/<B>TARGET:<\/B>/);
+      if (tStart === -1) return { targetKws: [], excludeKws: [] }; // universal
+
+      // Get text until next <b>EFFECT:</b> or <b>RESTRICTIONS:</b>
+      const after = rawDesc.slice(tStart);
+      const nextSec = after.toUpperCase().search(/<B>(EFFECT:|RESTRICTIONS:|RESULT:)<\/B>/);
+      const targetRaw = nextSec === -1 ? after : after.slice(0, nextSec);
+
+      // Extract kwb span keywords: <span class="kwb">KEYWORD</span>
+      const kwbKws = [...targetRaw.matchAll(/<span class="kwb">([^<]+)<\/span>/gi)]
+        .map(m => m[1].trim().toUpperCase());
+
+      // Strip HTML to plain text for further parsing
+      const targetPlain = targetRaw.replace(/<[^>]+>/g, ' ').toUpperCase();
+
+      // Also check for plain type keywords directly in text
+      TYPE_KWS.forEach(kw => {
+        if (targetPlain.includes(kw) && !kwbKws.includes(kw)) kwbKws.push(kw);
+      });
+
+      // Check for [BRACKET] weapon/ability keywords e.g. [GRENADES], [SMOKE]
+      const bracketKws = [...targetPlain.matchAll(/\[([A-Z][A-Z0-9\s\-]+?)\]/g)]
+        .map(m => m[1].trim());
+      bracketKws.forEach(kw => { if (!kwbKws.includes(kw)) kwbKws.push(kw); });
+
+      // Separate excluded keywords from required — look for "excluding X" pattern
+      const excludeKws = [];
+      const excludeMatch = targetPlain.match(/EXCLUDING[^.]+?(\b(?:MONSTER|VEHICLE|INFANTRY|MOUNTED|CHARACTER|WALKER|TITANIC|BEAST|CAVALRY|BATTLELINE|TRANSPORT)(?:\s+(?:AND|OR)\s+\b(?:MONSTER|VEHICLE|INFANTRY|MOUNTED|CHARACTER|WALKER|TITANIC|BEAST|CAVALRY|BATTLELINE|TRANSPORT))*)/g);
+      if (excludeMatch) {
+        excludeMatch.forEach(ex => {
+          TYPE_KWS.forEach(kw => { if (ex.includes(kw)) excludeKws.push(kw); });
+        });
+      }
+
+      // Required = all found minus excluded
+      const targetKws = kwbKws.filter(kw => !excludeKws.includes(kw));
+
+      return { targetKws, excludeKws };
+    }
+
+    const convertedCoreStrats = rawStratagems
+      .filter(s => s.name && s.description
+        && (!s.faction_id    || s.faction_id.trim()    === '')
+        && (!s.detachment_id || s.detachment_id.trim() === '')
+        && (s.type||'').includes('Core'))
+      .map(s => {
+        const { targetKws, excludeKws } = parseStratTarget(s.description);
+        return {
+          id:         s.id,
+          name:       s.name,
+          type:       s.type || '',
+          cost:       s.cp_cost ? s.cp_cost + 'CP' : '1CP',
+          turn:       s.turn  || '',
+          phase:      s.phase || '',
+          desc:       stripHTML(s.description),
+          targetKws,
+          excludeKws,
+        };
+      });
+
+    // Stratagems keyed by detachment_id
+    const stratByDet = groupBy(rawStratagems, 'detachment_id');
+    // Detachment abilities keyed by detachment_id
+    const detAbilByDet = groupBy(rawDetAbils, 'detachment_id');
+
+    const convertedDetachments = rawDetachments
+      .filter(d => d.id && d.name && d.faction_id)
+    .map(d => {
+    const rule = (detAbilByDet[d.id] || [])[0];
+    const strats = (stratByDet[d.id] || [])
+      .filter(s => s.name && s.description)
+      .map(s => ({
+        name: s.name,
+        cost: s.cp_cost ? s.cp_cost + 'CP' : '?CP',
+        desc: stripHTML(s.description),
+      }));
+
+    return {
+      id: d.id, // ✅ THIS WAS MISSING
+      faction: d.faction_id,
+      name: d.name,
+      rule: rule ? rule.name : d.name,
+      ruleDesc: rule ? stripHTML(rule.description) : '',
+      stratagems: strats,
+      enhancements: [],
+    };
+  });
+
+    // ── Save everything to DB ──
+    await dbPutAll('units', convertedUnits);
+    if (convertedFactions.length > 0) await dbPutAll('factions', convertedFactions);
+    if (convertedDetachments.length > 0) await dbPutAll('detachments', convertedDetachments);
+    if (convertedCoreStrats.length > 0) await dbPutAll('coreStratagems', convertedCoreStrats);
+
+    units          = convertedUnits;
+    factions       = convertedFactions.length > 0 ? convertedFactions : FACTIONS;
+    detachments    = convertedDetachments.length > 0 ? convertedDetachments : DETACHMENTS;
+    coreStratagems = convertedCoreStrats;
+
+    const now = new Date().toLocaleString('en-GB', {dateStyle:'short', timeStyle:'short'});
+    await dbPut('meta', {key:'lastSync',     value:`Wahapedia · ${now}`});
+    await dbPut('meta', {key:'lastSyncTime', value:Date.now()});
+    updateSyncNotice(`✓ Wahapedia · ${now} · ${units.length} units · ${detachments.length} detachments`);
+
+    renderFactionPills();
+    renderDetFactionPills();
+    renderUnits();
+    renderDets();
+    renderFavs();
+
+  } catch (err) {
+    console.warn('Wahapedia sync failed:', err.message);
+    units       = UNITS;
+    factions    = FACTIONS;
+    detachments = DETACHMENTS;
+    await dbPutAll('units', UNITS);
+    const now = new Date().toLocaleString('en-GB', {dateStyle:'short', timeStyle:'short'});
+    await dbPut('meta', {key:'lastSync', value:`Built-in · ${now} (sync failed: ${err.message})`});
+    updateSyncNotice(`⚠ Sync failed — using built-in data. Tap ⟳ to retry.`);
+    renderFactionPills();
+    renderUnits();
+  }
+
+  updateStatus();
+}
+
+function groupBy(arr, key) {
+  const map = {};
+  (arr || []).forEach(item => {
+    const k = item[key];
+    if (!map[k]) map[k] = [];
+    map[k].push(item);
+  });
+  return map;
+}
+
+// Map Wahapedia faction IDs/names to colours
+function factionColor(id, name) {
+  const n = (name || '').toLowerCase();
+  if (n.includes('space marine'))  return '#3a6fba';
+  if (n.includes('blood angel'))   return '#a02020';
+  if (n.includes('dark angel'))    return '#1a4a2a';
+  if (n.includes('space wolf'))    return '#4a6a8a';
+  if (n.includes('deathwatch'))    return '#2a2a4a';
+  if (n.includes('grey knight'))   return '#6a8aaa';
+  if (n.includes('chaos space'))   return '#8b2020';
+  if (n.includes('death guard'))   return '#4a6a2a';
+  if (n.includes('thousand son'))  return '#1a4a8a';
+  if (n.includes('world eater'))   return '#aa2020';
+  if (n.includes("emperor's child"))return '#8a1a8a';
+  if (n.includes('chaos daemon'))  return '#6a1a1a';
+  if (n.includes('chaos knight'))  return '#3a1a1a';
+  if (n.includes('astra milita'))  return '#6a5a2a';
+  if (n.includes('mechanicus'))    return '#8a2a1a';
+  if (n.includes('sororitas'))     return '#8a1a3a';
+  if (n.includes('custodes'))      return '#b8922a';
+  if (n.includes('aeldari'))       return '#2a5a6a';
+  if (n.includes('drukhari'))      return '#3a1a5a';
+  if (n.includes('harlequin'))     return '#5a2a6a';
+  if (n.includes('necron'))        return '#1a5a1a';
+  if (n.includes('ork'))           return '#2a5a1a';
+  if (n.includes("t'au") || n.includes('tau')) return '#1a4a5a';
+  if (n.includes('tyranid'))       return '#4a1a5a';
+  if (n.includes('genestealer'))   return '#3a1a4a';
+  if (n.includes('votann'))        return '#5a4a2a';
+  if (n.includes('imperial knight')) return '#5a3a1a';
+  return '#444';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SCREENS
+// ═══════════════════════════════════════════════════════════════
+function showScreen(id){
+  activeScreen=id;
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+id).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('nav-'+id).classList.add('active');
+  if(id==='favs') renderFavs();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FACTION PILLS
+// ═══════════════════════════════════════════════════════════════
+function renderFactionPills(){
+  const el=document.getElementById('faction-pills');
+  const present=[...new Set(units.map(u=>u.faction))];
+  const fs=[{id:'all',name:'All'},...factions.filter(f=>present.includes(f.id))];
+  el.innerHTML=fs.map(f=>`<button class="faction-pill${activeFaction===f.id?' active':''}${f.id==='all'?' all':''}" style="${f.id!=='all'&&activeFaction===f.id?`background:${factions.find(x=>x.id===f.id)?.color||'#444'};border-color:transparent;`:''}${f.id!=='all'&&activeFaction!==f.id?`border-color:${factions.find(x=>x.id===f.id)?.color||'#444'}40;color:${factions.find(x=>x.id===f.id)?.color||'#666'};`:''}" onclick="setUnitFaction('${f.id}')">${f.name}</button>`).join('');
+}
+
+function setUnitFaction(id){ activeFaction=id; renderFactionPills(); renderUnits(); }
+
+function renderDetFactionPills(){
+  const el=document.getElementById('det-faction-pills');
+  const present=[...new Set(detachments.map(d=>d.faction))];
+  const fs=[{id:'all',name:'All'},...factions.filter(f=>present.includes(f.id))];
+  el.innerHTML=fs.map(f=>`<button class="faction-pill${detFaction===f.id?' active':''}${f.id==='all'?' all':''}" style="${f.id!=='all'&&detFaction===f.id?`background:${factions.find(x=>x.id===f.id)?.color||'#444'};border-color:transparent;`:''}${f.id!=='all'&&detFaction!==f.id?`border-color:${factions.find(x=>x.id===f.id)?.color||'#444'}40;color:${factions.find(x=>x.id===f.id)?.color||'#666'};`:''}" onclick="setDetFaction('${f.id}')">${f.name}</button>`).join('');
+}
+
+function setDetFaction(id){ detFaction=id; renderDetFactionPills(); renderDets(); }
+
+// ═══════════════════════════════════════════════════════════════
+// UNITS LIST
+// ═══════════════════════════════════════════════════════════════
+function filterUnits(q){ unitSearch=q.toLowerCase(); renderUnits(); }
+
+function getFilteredUnits(){
+  return units.filter(u=>{
+    if(!showLegend && u.legend) return false;
+    if(activeFaction!=='all'&&u.faction!==activeFaction) return false;
+    if(!unitSearch) return true;
+    return u.name.toLowerCase().includes(unitSearch)||
+      u.keywords.some(k=>k.toLowerCase().includes(unitSearch))||
+      (u.abilities||[]).some(a=>a.name.toLowerCase().includes(unitSearch))||
+      u.role.toLowerCase().includes(unitSearch);
+  });
+}
+
+function renderUnits(){
+  const list=document.getElementById('units-list');
+  const cnt=document.getElementById('unit-count');
+  const filtered=getFilteredUnits();
+  cnt.textContent=`${filtered.length} unit${filtered.length!==1?'s':''} found`;
+  // Update legend count hint
+  const hint=document.getElementById('legend-count-hint');
+  if(hint){
+    const legendCount=units.filter(u=>activeFaction==='all'?u.legend:u.legend&&u.faction===activeFaction).length;
+    hint.textContent=legendCount>0&&!showLegend?`(${legendCount} Legends hidden)`:'';
+  }
+  if(!filtered.length){list.innerHTML=`<div class="empty"><div class="empty-icon">☠</div><div class="empty-title">No Units Found</div><div class="empty-desc">The Warp offers no answers.</div></div>`;return;}
+  list.innerHTML=filtered.map(u=>{
+    const fc=factions.find(f=>f.id===u.faction);
+    const isFav=favourites.has(u.id);
+    return `<div class="unit-card" onclick="openUnit('${u.id}')">
+      <div class="unit-header">
+        <div class="faction-dot" style="background:${fc?.color||'#444'};"></div>
+        <div class="unit-main">
+          <div class="unit-name">${u.name}${u.legend?'<span class="legend-badge-card">📖 Legends</span>':''}</div>
+          <div class="unit-meta">
+            <span class="tag role">${u.role}</span>
+            ${u.keywords.slice(0,3).map(k=>`<span class="tag">${k}</span>`).join('')}
+          </div>
+        </div>
+        <div class="unit-pts">${u.pts}<small>pts</small></div>
+        <button class="fav-btn${isFav?' active':''}" onclick="event.stopPropagation();toggleFav('${u.id}')">${isFav?'★':'☆'}</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// UNIT SHEET — full Wahapedia-style datasheet
+// ═══════════════════════════════════════════════════════════════
+function openUnit(id){
+  const u=units.find(x=>x.id===id);
+  if(!u) return;
+  const fc=factions.find(f=>f.id===u.faction);
+  const isFav=favourites.has(u.id);
+
+  // ── Header ──
+  const baseSizeStr=u.baseSize?`<span style="font-size:0.7rem;color:var(--t3);margin-left:6px;">⬡ ${u.baseSize}</span>`:'';
+  const legendStr=u.legend?`<span class="legend-badge">📖 Legends</span>`:'';
+  document.getElementById('sheet-header').innerHTML=`
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;">
+      <div style="flex:1;min-width:0;">
+        <div class="sheet-name">${u.name}${baseSizeStr}</div>
+        <div style="display:flex;align-items:center;gap:6px;margin-top:3px;flex-wrap:wrap;">
+          <div class="sheet-faction" style="color:${fc?.color||'var(--t3)'};">${fc?.name||''}</div>
+          ${legendStr}
+        </div>
+        <div style="font-size:0.68rem;color:var(--t3);margin-top:2px;">${u.role}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;">
+        <span class="pts-badge">${u.pts} pts</span>
+        <button class="fav-btn${isFav?' active':''}" style="margin:0;" onclick="event.stopPropagation();toggleFav('${u.id}');this.className='fav-btn'+(favourites.has('${u.id}')?' active':'')">${isFav?'★':'☆'}</button>
+      </div>
+    </div>`;
+
+  let html='';
+
+  // ── 1. Stats ──
+  if(u.stats?.length){
+    html+=`<div class="sh-section"><div class="sh-title">Characteristics</div>`;
+    u.stats.forEach(s=>{
+      if(u.stats.length>1) html+=`<div class="stat-model-name">${s.m}</div>`;
+      html+=`<div class="stats-row" style="margin-bottom:6px;">
+        ${['M','T','Sv','W','Ld','OC'].map(k=>{
+          if(k==='Sv'){
+  const inv = s.inv && s.inv !== '-'
+    ? `${s.inv}${s.inv_descr ? ` (${s.inv_descr})` : ''}`
+    : null;
+
+  return `<div class="stat-cell">
+    <span class="stat-label">SV</span>
+    <span class="stat-val">${s.Sv}</span>
+    ${inv ? `<div class="stat-sub">${inv}</div>` : ''}
+  </div>`;
+}
+          return `<div class="stat-cell"><span class="stat-label">${k}</span><span class="stat-val">${s[k]}</span></div>`;
+        }).join('')}
+      </div>`;
+    });
+    html+=`</div>`;
+  }
+
+  // ── 2. Weapons (split ranged / melee) ──
+  if(u.weapons?.length){
+    const ranged=u.weapons.filter(w=>w.range!=='Melee');
+    const melee=u.weapons.filter(w=>w.range==='Melee');
+
+    function weaponTable(weapons,ismelee){
+      const hitCol=ismelee?'WS':'BS';
+      const cols=ismelee?6:7; // name + (range?) + A + hit + S + AP + D
+      let t=`<div class="wh-weapon-section">
+        <div class="wh-weapon-section-header">
+          <span class="wh-weapon-type-icon">${ismelee?'⚔️':'🎯'}</span>
+          <span class="wh-weapon-type-label">${ismelee?'Melee Weapons':'Ranged Weapons'}</span>
+        </div>
+        <table class="wh-wtable">
+          <thead><tr>
+            <th>Name</th>
+            ${ismelee?'':'<th>Range</th>'}
+            <th>A</th><th>${hitCol}</th><th>S</th><th>AP</th><th>D</th>
+          </tr></thead>
+          <tbody>`;
+      weapons.forEach(w=>{
+        const hitVal=ismelee?(w.WS||w.BS||'—'):w.BS||'—';
+        const hasKw=w.kw&&w.kw!=='—';
+        const kwHtml=hasKw?w.kw.split(',').map(k=>`<span class="wh-wkw-tag">${k.trim()}</span>`).join(''):'';
+        // stats row
+        t+=`<tr>
+          <td>${w.name}</td>
+          ${ismelee?'':`<td>${w.range}</td>`}
+          <td>${w.A}</td><td>${hitVal}</td><td>${w.S}</td><td>${w.AP}</td><td>${w.D}</td>
+        </tr>`;
+        // keyword row
+        if(hasKw){
+          t+=`<tr>
+            <td colspan="${cols}" style="padding:0 8px 6px;border-bottom:1px solid var(--b1);">
+              <div class="wh-wkw">${kwHtml}</div>
+            </td>
+          </tr>`;
+        }
+      });
+      t+=`</tbody></table></div>`;
+      return t;
+    }
+
+    html+=`<div class="sh-section">`;
+    if(ranged.length) html+=weaponTable(ranged,false);
+    if(melee.length)  html+=weaponTable(melee,true);
+    html+=`</div>`;
+  }
+
+  // ── 3. Wargear Options ──
+  if(u.wargearOptions?.length){
+    html+=`<div class="sh-section"><div class="sh-title">Wargear Options</div>
+      <ul class="wh-wargear-list">
+        ${u.wargearOptions.map(o=>`<li>${o}</li>`).join('')}
+      </ul></div>`;
+  }
+
+  // ── 4. Core Abilities (Deadly Demise, Feel No Pain, Leader, Scouts etc.) ──
+  if(u.coreAbilities?.length){
+    // Icon map for well-known core abilities
+    const coreIcons = {
+      'deadly demise':'💀', 'feel no pain':'🛡', 'fights first':'⚡',
+      'leader':'👑', 'lone operative':'🎯', 'scouts':'👁',
+      'stealth':'🌑', 'infiltrators':'🗡', 'deep strike':'🪂',
+      'firing deck':'🔫', 'hover':'🚁', 'fly':'✈',
+      'objective secured':'🏴', 'devastating wounds':'💥',
+      'lethal hits':'🎯', 'sustained hits':'🔁', 'twin-linked':'🔗',
+      'torrent':'🌊', 'blast':'💣', 'indirect fire':'📡',
+      'heavy':'⚓', 'rapid fire':'💨', 'pistol':'🔫',
+      'precision':'🎯', 'melta':'🔥', 'anti-':'🔰',
+    };
+    function coreIcon(name){
+      const n=name.toLowerCase();
+      for(const [k,v] of Object.entries(coreIcons)) if(n.startsWith(k)||n.includes(k)) return v;
+      return '◆';
+    }
+    html+=`<div class="sh-section"><div class="sh-title">Core Abilities</div>
+      <div class="core-abilities">
+        ${u.coreAbilities.map(a=>{
+          // Split name from value e.g. "Feel No Pain 5+" → name="Feel No Pain" val="5+"
+          const match=a.name.match(/^(.*?)(\s+[\d+D\-]+["+\-]?\+?)?$/);
+          const aName=match?match[1].trim():a.name;
+          const aVal=match&&match[2]?match[2].trim():'';
+          return `<div class="core-chip" title="${a.desc||''}">
+            <span class="core-chip-icon">${coreIcon(a.name)}</span>
+            <span>${aName}</span>
+            ${aVal?`<span class="core-chip-val">${aVal}</span>`:''}
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }
+
+  // ── 4b. Leader info (can lead / attached by) ──
+  if(u.canLead?.length){
+    html+=`<div class="sh-section"><div class="sh-title">👑 Can Be Attached To</div>
+      <div class="leader-list">
+        ${u.canLead.map(name=>`<div class="leader-item"><span class="leader-icon">⚔</span>${name}</div>`).join('')}
+      </div></div>`;
+  }
+  if(u.attachedBy?.length){
+    html+=`<div class="sh-section"><div class="sh-title">🔗 Can Be Led By</div>
+      <div class="leader-list">
+        ${u.attachedBy.map(name=>`<div class="leader-item"><span class="leader-icon">👑</span>${name}</div>`).join('')}
+      </div></div>`;
+  }
+
+  // ── 5. Abilities ──
+  if(u.abilities?.length){
+    html+=`<div class="sh-section"><div class="sh-title">Abilities</div>`;
+    // faction ability first if flagged
+    u.abilities.forEach(a=>{
+      const isFactionAbility=a.faction;
+      html+=`<div class="ability-item">
+        ${isFactionAbility?`<div style="font-size:0.58rem;font-weight:700;letter-spacing:0.08em;color:${fc?.color||'var(--red2)'};text-transform:uppercase;margin-bottom:2px;">FACTION: ${fc?.name||''}</div>`:''}
+        <div class="ability-name" style="${isFactionAbility?`color:${fc?.color||'var(--red2)'}`:''}">${a.name}</div>
+        <div class="ability-desc">${a.desc}</div>
+      </div>`;
+    });
+    html+=`</div>`;
+  }
+
+  // ── 5. Wargear Abilities ──
+  if(u.wargearAbilities?.length){
+    html+=`<div class="sh-section"><div class="sh-title">Wargear Abilities</div>`;
+    u.wargearAbilities.forEach(a=>{
+      html+=`<div class="ability-item"><div class="ability-name">${a.name}</div><div class="ability-desc">${a.desc}</div></div>`;
+    });
+    html+=`</div>`;
+  }
+
+  // ── 6. Unit Composition ──
+  if(u.composition?.length){
+    html+=`<div class="sh-section"><div class="sh-title">Unit Composition</div>
+      <div class="wh-comp-wrap">`;
+    u.composition.forEach(c=>{
+      html+=`<div class="wh-comp-row">
+        <span class="wh-comp-models">${c.models}</span>
+        ${c.pts!==undefined?`<span class="wh-comp-pts">${c.pts}</span>`:''}
+      </div>`;
+    });
+    if(u.loadout){
+      html+=`<div class="wh-comp-note">${u.loadout}</div>`;
+    }
+    html+=`</div></div>`;
+  } else {
+    // Fallback: show pts from unit card
+    html+=`<div class="sh-section"><div class="sh-title">Points</div>
+      <div class="wh-comp-wrap">
+        <div class="wh-comp-row">
+          <span class="wh-comp-models">Base cost</span>
+          <span class="wh-comp-pts">${u.pts} pts</span>
+        </div>
+      </div></div>`;
+  }
+
+  // ── 6b. Transport capacity ──
+  if(u.transport){
+    html+=`<div class="sh-section"><div class="sh-title">🚌 Transport</div>
+      <div class="transport-box">
+        <div class="transport-capacity">${u.transport}</div>
+      </div></div>`;
+  }
+
+  // ── 6c. Damaged profile ──
+  if(u.damagedW && u.damagedDesc){
+    html+=`<div class="sh-section"><div class="sh-title">⚠ Damaged</div>
+      <div class="damaged-box">
+        <div class="damaged-row">
+          <span class="damaged-wounds">${u.damagedW} WOUNDS</span>
+          <span class="damaged-desc">${u.damagedDesc}</span>
+        </div>
+      </div></div>`;
+  }
+
+  // ── 7. Keywords ──
+  const factionKws = u.factionKeywords||[fc?.name].filter(Boolean);
+  if(u.keywords?.length||factionKws.length){
+    html+=`<div class="sh-section">`;
+    if(u.keywords?.length){
+      html+=`<div class="sh-title">Keywords</div>
+        <div class="wh-kw-wrap" style="margin-bottom:8px;">
+          ${u.keywords.map(k=>`<span class="wh-kw-pill">${k}</span>`).join('')}
+        </div>`;
+    }
+    if(factionKws.length){
+      html+=`<div class="sh-title" style="margin-top:${u.keywords?.length?'8px':'0'};">Faction Keywords</div>
+        <div class="wh-kw-wrap">
+          ${factionKws.map(k=>`<span class="wh-kw-pill faction">${k}</span>`).join('')}
+        </div>`;
+    }
+    html+=`</div>`;
+  }
+
+  // ── 8. Core Stratagems (filtered to relevant for this unit) ──
+  if(coreStratagems.length){
+    const unitKws = new Set((u.keywords||[]).map(k=>k.toUpperCase()));
+
+    function isRelevant(s) {
+      // Excluded: unit has a keyword that disqualifies it
+      if (s.excludeKws && s.excludeKws.some(kw => unitKws.has(kw))) return false;
+      // Universal: no target restrictions
+      if (!s.targetKws || s.targetKws.length === 0) return true;
+      // Unit must have at least one required keyword
+      return s.targetKws.some(kw => unitKws.has(kw));
+    }
+
+    const relevant   = coreStratagems.filter(s=>isRelevant(s));
+    const irrelevant = coreStratagems.filter(s=>!isRelevant(s));
+    // Show relevant first, then a collapsed "show all" toggle
+    const showAll = relevant.length === 0; // if none relevant, show all by default
+
+    html+=`<div class="sh-section">
+      <div class="sh-title">Core Stratagems
+        <span style="font-size:0.62rem;color:var(--t3);font-weight:400;margin-left:6px;">(${relevant.length} applicable)</span>
+      </div>
+      <div class="core-strat-list">`;
+
+    const toShow = showAll ? coreStratagems : relevant;
+    toShow.forEach(s=>{
+      const phase = s.phase ? s.phase.replace('phase','').replace('Phase','').trim() : '';
+      const typeShort = (s.type||'').replace('Core – ','').replace(' Stratagem','');
+      html+=`<div class="core-strat-card relevant" id="cs-${u.id}-${s.id}" onclick="toggleCoreStrat('${u.id}','${s.id}')">
+        <div class="core-strat-header">
+          <span class="core-strat-name">${s.name}</span>
+          <div class="core-strat-badges">
+            ${phase?`<span class="core-strat-phase">${phase}</span>`:''}
+            <span class="core-strat-cp">${s.cost}</span>
+          </div>
+        </div>
+        <div class="core-strat-body">
+          <div class="core-strat-type">${typeShort}</div>
+          <div class="core-strat-desc">${s.desc}</div>
+        </div>
+      </div>`;
+    });
+
+    if(!showAll && irrelevant.length>0){
+      html+=`<div style="margin-top:4px;">
+        <button onclick="toggleAllCoreStrats('${u.id}')" id="cs-toggle-${u.id}"
+          style="background:none;border:1px solid var(--b2);border-radius:8px;
+          padding:6px 12px;color:var(--t3);font-size:0.72rem;cursor:pointer;width:100%;">
+          Show all ${coreStratagems.length} core stratagems ▼
+        </button>
+        <div id="cs-all-${u.id}" style="display:none;margin-top:6px;">
+          <div class="core-strat-list">
+          ${irrelevant.map(s=>{
+            const phase = s.phase ? s.phase.replace('phase','').replace('Phase','').trim() : '';
+            const typeShort = (s.type||'').replace('Core – ','').replace(' Stratagem','');
+            return `<div class="core-strat-card" id="cs-${u.id}-${s.id}x" onclick="toggleCoreStrat('${u.id}','${s.id}x')">
+              <div class="core-strat-header">
+                <span class="core-strat-name">${s.name}</span>
+                <div class="core-strat-badges">
+                  ${phase?`<span class="core-strat-phase">${phase}</span>`:''}
+                  <span class="core-strat-cp">${s.cost}</span>
+                </div>
+              </div>
+              <div class="core-strat-body">
+                <div class="core-strat-type">${typeShort}</div>
+                <div class="core-strat-desc">${s.desc}</div>
+              </div>
+            </div>`;
+          }).join('')}
+          </div>
+        </div>
+      </div>`;
+    }
+
+    html+=`</div></div>`;
+  }
+
+  // ── 9. Detachments (all for this faction) ──
+  const factionDets=detachments.filter(d=>d.faction===u.faction);
+  if(factionDets.length){
+    html+=`<div class="sh-section"><div class="sh-title">Detachments & Stratagems</div>`;
+    factionDets.forEach((d,i)=>{
+      const gid=`whdg-${u.id}-${i}`;
+      html+=`<div class="wh-det-group" id="${gid}">
+        <div class="wh-det-group-hdr" onclick="toggleWhDet('${gid}')">
+          <div class="wh-det-group-bar" style="background:${fc?.color||'#444'};"></div>
+          <div class="wh-det-group-info">
+            <div class="wh-det-group-name">${d.name}</div>
+            <div class="wh-det-group-rule">${d.rule}</div>
+          </div>
+          <div class="wh-det-group-chevron">▼</div>
+        </div>
+        <div class="wh-det-body">
+          <div class="wh-det-rule-box"><strong style="color:var(--t1);">${d.rule}:</strong> ${d.ruleDesc}</div>
+          ${d.stratagems?.length?`<div class="wh-det-sub">Stratagems</div>${d.stratagems.map(s=>`
+            <div class="wh-strat">
+              <div class="wh-strat-top">
+                <span class="wh-strat-name">${s.name}</span>
+                <span class="wh-strat-cost">${s.cost}</span>
+              </div>
+              <div class="wh-strat-sub">${d.name}</div>
+              <div class="wh-strat-desc">${s.desc}</div>
+            </div>`).join('')}`:''}
+          ${d.enhancements?.length?`<div class="wh-det-sub">Enhancements</div>${d.enhancements.map(e=>`
+            <div class="wh-enh">
+              <div class="wh-enh-top">
+                <span class="wh-enh-name">${e.name}</span>
+                <span class="wh-enh-pts">${e.pts}</span>
+              </div>
+              <div class="wh-enh-desc">${e.desc}</div>
+            </div>`).join('')}`:''}
+        </div>
+      </div>`;
+    });
+    html+=`</div>`;
+  }
+
+  document.getElementById('sheet-body').innerHTML=html;
+  document.getElementById('sheet-backdrop').classList.add('open');
+  document.getElementById('unit-sheet').classList.add('open');
+}
+
+function toggleCoreStrat(uid, sid){
+  const card = document.getElementById(`cs-${uid}-${sid}`);
+  if(card) card.classList.toggle('open');
+}
+
+function toggleAllCoreStrats(uid){
+  const container = document.getElementById(`cs-all-${uid}`);
+  const btn = document.getElementById(`cs-toggle-${uid}`);
+  if(!container) return;
+  const showing = container.style.display !== 'none';
+  container.style.display = showing ? 'none' : 'block';
+  if(btn) btn.textContent = showing
+    ? `Show all core stratagems ▼`
+    : `Hide extra stratagems ▲`;
+}
+
+function toggleWhDet(id){
+  const el=document.getElementById(id);
+  if(!el) return;
+  el.classList.toggle('open');
+}
+
+function closeSheet(){
+  document.getElementById('sheet-backdrop').classList.remove('open');
+  document.getElementById('unit-sheet').classList.remove('open');
+}
+
+// ──────────────────────────────────────────────────────────────
+// IMPROVED BOTTOM SHEET GESTURES (no more accidental closes)
+// ──────────────────────────────────────────────────────────────
+const sheet = document.getElementById('unit-sheet');
+const sheetBody = document.getElementById('sheet-body');
+const sheetDrag = sheet.querySelector('.sheet-drag');
+
+let touchStartY = 0;
+let touchStartTime = 0;
+let isAtTop = false;
+
+function setupSheetGestures() {
+  // 1. Drag the handle bar → always closes
+  sheetDrag.addEventListener('touchstart', e => {
+    touchStartY = e.touches[0].clientY;
+    touchStartTime = Date.now();
+  }, { passive: true });
+
+  sheetDrag.addEventListener('touchend', e => {
+    const dy = e.changedTouches[0].clientY - touchStartY;
+    const duration = Date.now() - touchStartTime;
+    if (dy > 80 || (dy > 30 && duration < 300)) closeSheet();
+  }, { passive: true });
+
+  // 2. Pull-to-close when content is scrolled to the very top
+  sheetBody.addEventListener('touchstart', e => {
+    touchStartY = e.touches[0].clientY;
+    touchStartTime = Date.now();
+    isAtTop = sheetBody.scrollTop <= 5;
+  }, { passive: true });
+
+  sheetBody.addEventListener('touchmove', e => {
+    if (!isAtTop) return;
+    const dy = e.touches[0].clientY - touchStartY;
+    if (dy > 30) {
+      e.preventDefault();                    // stop normal scroll
+      sheet.style.transition = 'none';
+      sheet.style.transform = `translateY(${dy}px)`;
+    }
+  }, { passive: false });
+
+  sheetBody.addEventListener('touchend', e => {
+    if (!isAtTop) return;
+    sheet.style.transition = 'transform 0.3s cubic-bezier(0.32,0.72,0,1)';
+    sheet.style.transform = '';
+
+    const dy = e.changedTouches[0].clientY - touchStartY;
+    const duration = Date.now() - touchStartTime;
+    if (dy > 120 || (dy > 50 && duration < 250)) {
+      closeSheet();
+    }
+  }, { passive: true });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DETACHMENTS
+// ═══════════════════════════════════════════════════════════════
+function filterDets(q){ detSearch=q.toLowerCase(); renderDets(); }
+
+function renderDets(){
+  const el=document.getElementById('det-list');
+  const filtered=detachments.filter(d=>{
+    if(detFaction!=='all'&&d.faction!==detFaction) return false;
+    if(!detSearch) return true;
+    return d.name.toLowerCase().includes(detSearch)||
+      d.rule.toLowerCase().includes(detSearch)||
+      d.ruleDesc.toLowerCase().includes(detSearch)||
+      (d.stratagems||[]).some(s=>s.name.toLowerCase().includes(detSearch));
+  });
+  if(!filtered.length){el.innerHTML=`<div class="empty"><div class="empty-icon">📋</div><div class="empty-title">No Detachments Found</div><div class="empty-desc">Try a different search.</div></div>`;return;}
+  const byFaction={};
+  filtered.forEach(d=>{(byFaction[d.faction]=byFaction[d.faction]||[]).push(d);});
+  let html='';
+  Object.entries(byFaction).forEach(([fid,dets])=>{
+    const fc=factions.find(f=>f.id===fid);
+    html+=`<div class="det-faction-header">
+      <div class="det-faction-line" style="background:${fc?.color||'#444'}40;"></div>
+      <div class="det-faction-label" style="color:${fc?.color||'#888'}">${fc?.name||fid}</div>
+      <div class="det-faction-line" style="background:${fc?.color||'#444'}40;"></div>
+    </div>`;
+    dets.forEach(d=>{
+      const did=`${d.faction}-${d.name.replace(/\s/g,'_')}`;
+      const open=expandedDets.has(did);
+      html+=`<div class="det-card${open?' open':''}" id="dc-${did}">
+        <div class="det-header" onclick="toggleDet('${did}')">
+          <div class="det-color-bar" style="background:${fc?.color||'#444'};"></div>
+          <div class="det-info">
+            <div class="det-name">${d.name}</div>
+            <div class="det-rule-name">${d.rule}</div>
+          </div>
+          <span class="det-chevron">▼</span>
+        </div>
+        <div class="det-body">
+          <div class="det-rule-desc">${d.ruleDesc}</div>
+          ${d.stratagems?.length?`<div class="sub-title">Stratagems</div>${d.stratagems.map(s=>`<div class="strat-item"><div class="strat-top"><span class="strat-name">${s.name}</span><span class="strat-cost">${s.cost}</span></div><div class="strat-desc">${s.desc}</div></div>`).join('')}`:''}
+          ${d.enhancements?.length?`<div class="sub-title">Enhancements</div>${d.enhancements.map(e=>`<div class="enh-item"><div class="enh-top"><span class="enh-name">${e.name}</span><span class="enh-pts">${e.pts}</span></div><div class="enh-desc">${e.desc}</div></div>`).join('')}`:''}
+        </div>
+      </div>`;
+    });
+  });
+  el.innerHTML=html;
+}
+
+function toggleDet(id){
+  if(expandedDets.has(id)) expandedDets.delete(id);
+  else expandedDets.add(id);
+  renderDets();
+  setTimeout(()=>document.getElementById('dc-'+id)?.scrollIntoView({behavior:'smooth',block:'nearest'}),80);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FAVOURITES
+// ═══════════════════════════════════════════════════════════════
+async function toggleFav(id){
+  if(favourites.has(id)) favourites.delete(id);
+  else favourites.add(id);
+  await dbPut('meta',{key:'favourites',value:[...favourites]});
+  renderUnits();
+  renderFavs();
+}
+
+function renderFavs(){
+  const el=document.getElementById('favs-list');
+  const favUnits=units.filter(u=>favourites.has(u.id));
+  if(!favUnits.length){el.innerHTML=`<div class="empty"><div class="empty-icon">★</div><div class="empty-title">No Favourites Yet</div><div class="empty-desc">Tap ☆ on any unit to save it here for quick access.</div></div>`;return;}
+  el.innerHTML=favUnits.map(u=>{
+    const fc=factions.find(f=>f.id===u.faction);
+    return `<div class="unit-card" onclick="openUnit('${u.id}')">
+      <div class="unit-header">
+        <div class="faction-dot" style="background:${fc?.color||'#444'};"></div>
+        <div class="unit-main">
+          <div class="unit-name">${u.name}</div>
+          <div class="unit-meta"><span class="tag role">${u.role}</span><span class="tag" style="color:${fc?.color}">${fc?.name||''}</span></div>
+        </div>
+        <div class="unit-pts">${u.pts}<small>pts</small></div>
+        <button class="fav-btn active" onclick="event.stopPropagation();toggleFav('${u.id}')">★</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PWA INSTALL
+// ═══════════════════════════════════════════════════════════════
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;document.getElementById('install-banner').classList.add('show');});
+document.getElementById('inst-btn').addEventListener('click',async()=>{if(!deferredPrompt)return;deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null;document.getElementById('install-banner').classList.remove('show');});
+window.addEventListener('appinstalled',()=>document.getElementById('install-banner').classList.remove('show'));
+if('serviceWorker'in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{});
+
+init();
+</script>
+</body>
+</html>
